@@ -4,8 +4,8 @@ The GitHub issues are the executable roadmap. Dependencies are intentional; date
 
 ## P0: prove the abstraction
 
-- **#1 Bootstrap architecture and engineering baseline** — current issue.
-- **#2 First vertical slice: city and capability registry** — depends on #1; proves Berlin and Mainz use identical core contracts.
+- **#1 Bootstrap architecture and engineering baseline** — completed.
+- **#2 First vertical slice: city and capability registry** — implemented; shared contracts and Berlin/Mainz deployment definitions prove the first portability boundary.
 - **#3 Provider adapter contracts and shared contract tests** — depends on #2; makes sources replaceable.
 - **#4 Shared weather vertical slice** — depends on #3; first real shared provider for Berlin and Mainz.
 

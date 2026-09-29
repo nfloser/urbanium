@@ -1,0 +1,59 @@
+schema_version: "1"
+id: berlin
+name: Berlin
+country_code: DE
+timezone: Europe/Berlin
+capabilities:
+  - id: weather
+    support: configured
+    notes: DWD is the initial shared meteorological provider candidate implemented later.
+  - id: realtime_transport
+    support: configured
+    notes: VBB publishes GTFS-Realtime for Berlin/Brandenburg.
+  - id: river_level
+    support: unknown
+    notes: No Berlin river-level provider has been selected for the initial registry.
+  - id: open_data_catalog
+    support: configured
+    notes: Berlin operates a central open-data catalogue with machine-readable metadata.
+sources:
+  - id: dwd_open_data
+    provider: Deutscher Wetterdienst
+    domain: weather
+    protocol: https
+    status: verified
+    authority: authoritative
+    capabilities: [weather]
+    endpoint: https://opendata.dwd.de/
+    update_frequency: product-specific
+    license:
+      terms_url: https://www.dwd.de/DE/leistungen/opendata/hilfe.html
+      redistribution: unknown
+      notes: Verify the selected product's current terms before redistribution.
+  - id: vbb_gtfs_rt
+    provider: Verkehrsverbund Berlin-Brandenburg
+    domain: mobility
+    protocol: gtfs_rt
+    status: verified
+    authority: authoritative
+    capabilities: [realtime_transport]
+    endpoint: https://production.gtfsrt.vbb.de/
+    update_frequency: realtime
+    license:
+      identifier: CC BY 4.0
+      terms_url: https://unternehmen.vbb.de/digitale-services/datensaetze/
+      redistribution: permitted
+      notes: Attribution requirements remain with the upstream feed.
+  - id: berlin_open_data
+    provider: Land Berlin
+    domain: open_data
+    protocol: ckan
+    status: verified
+    authority: authoritative
+    capabilities: [open_data_catalog]
+    endpoint: https://daten.berlin.de/
+    update_frequency: dataset-specific
+    license:
+      terms_url: https://daten.berlin.de/
+      redistribution: unknown
+      notes: Individual datasets retain their own licences; catalogue access does not relicense them.

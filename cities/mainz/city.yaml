@@ -1,0 +1,56 @@
+schema_version: "1"
+id: mainz
+name: Mainz
+country_code: DE
+timezone: Europe/Berlin
+capabilities:
+  - id: weather
+    support: configured
+    notes: DWD provides the shared meteorological source boundary.
+  - id: realtime_transport
+    support: candidate
+    notes: A Mainz-specific realtime transport interface requires dedicated verification.
+  - id: river_level
+    support: configured
+    notes: The official Mainz/Rhein gauge is available through PEGELONLINE.
+  - id: open_data_catalog
+    support: candidate
+    notes: Mainz is modernizing its WebGIS/geodata platform during 2026; API contracts remain to be verified.
+sources:
+  - id: dwd_open_data
+    provider: Deutscher Wetterdienst
+    domain: weather
+    protocol: https
+    status: verified
+    authority: authoritative
+    capabilities: [weather]
+    endpoint: https://opendata.dwd.de/
+    update_frequency: product-specific
+    license:
+      terms_url: https://www.dwd.de/DE/leistungen/opendata/hilfe.html
+      redistribution: unknown
+      notes: Verify the selected product's current terms before redistribution.
+  - id: pegelonline_mainz
+    provider: Wasserstraßen- und Schifffahrtsverwaltung des Bundes
+    domain: water
+    protocol: https
+    status: verified
+    authority: authoritative
+    capabilities: [river_level]
+    endpoint: https://pegelonline.wsv.de/gast/stammdaten?pegelnr=25100100
+    update_frequency: near-realtime
+    license:
+      redistribution: unknown
+      notes: Terms must be verified before stored observations are redistributed.
+  - id: mainz_webgis_2026
+    provider: Landeshauptstadt Mainz
+    domain: open_data
+    protocol: webgis
+    status: candidate
+    authority: authoritative
+    capabilities: [open_data_catalog]
+    endpoint: https://internet.mainz.de/stadtplan
+    update_frequency: provider-specific
+    license:
+      redistribution: unknown
+      notes: Candidate integration; API and dataset-specific terms require verification after the 2026 relaunch.
