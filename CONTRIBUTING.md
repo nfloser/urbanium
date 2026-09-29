@@ -31,3 +31,5 @@ Use descriptive branches such as feat/city-registry, fix/source-freshness, or do
 ## Tests
 
 Tests should match the risk of the change. Prefer reusable contract tests for providers and architecture tests for dependency boundaries. Real external-source smoke checks should be separated from deterministic correctness CI so provider outages cannot make core tests nondeterministic.
+
+Reusable helpers under `tests/contracts` are part of the checked test infrastructure and must pass strict Mypy together with production code.
