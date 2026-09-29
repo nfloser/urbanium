@@ -72,7 +72,11 @@ class CityRegistry:
         raise KeyError(f"city '{city_id}' does not declare capability '{capability_id}'")
 
     def supports(self, city_id: str, capability_id: str) -> bool:
-        return self.capability(city_id, capability_id).support is CapabilitySupport.CONFIGURED
+        try:
+            capability = self.capability(city_id, capability_id)
+        except KeyError:
+            return False
+        return capability.support is CapabilitySupport.CONFIGURED
 
     def sources_for_capability(
         self, city_id: str, capability_id: str
