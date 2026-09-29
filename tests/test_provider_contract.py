@@ -157,7 +157,16 @@ def test_result_cannot_claim_another_source_or_city() -> None:
     result = ProviderResult(
         availability=Availability.AVAILABLE,
         freshness=Freshness.FRESH,
-        observations=(observation(city_id="berlin"),),
+        observations=(
+            observation(
+                city_id="berlin",
+                entity=EntityReference(
+                    city_id="berlin",
+                    entity_type="weather_station",
+                    entity_id="station_1",
+                ),
+            ),
+        ),
     )
     with pytest.raises(ValueError, match="does not match provider descriptor"):
         validate_provider_result(DESCRIPTOR, result)

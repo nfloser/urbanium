@@ -23,6 +23,7 @@ def entity(city_id: str = "berlin", entity_id: str = "station_1") -> EntityRefer
 
 def evidence(record_id: str = "stations/00433") -> EvidenceReference:
     return EvidenceReference(
+        city_id="berlin",
         source_id="dwd_open_data",
         record_id=record_id,
         retrieved_at=NOW,
@@ -58,6 +59,8 @@ def test_relationship_has_deterministic_directional_identity_and_evidence() -> N
     assert assertion.canonical_id == (
         "berlin:weather_station:station_1:located_in:berlin:district:tempelhof"
     )
+    reverse = assertion.model_copy(update={"subject": object_, "object": subject})
+    assert reverse.canonical_id != assertion.canonical_id
     assert assertion.evidence[0].source_id == "dwd_open_data"
 
 
@@ -97,6 +100,16 @@ def test_relationship_rejects_naive_time_and_future_evidence() -> None:
         )
 
 
+def test_evidence_retrieval_time_must_be_timezone_aware() -> None:
+    with pytest.raises(ValidationError, match="retrieved_at must be timezone-aware"):
+        EvidenceReference(
+            city_id="berlin",
+            source_id="dwd_open_data",
+            record_id="stations/00433",
+            retrieved_at=NOW.replace(tzinfo=None),
+        )
+
+
 def test_duplicate_evidence_references_are_rejected() -> None:
     duplicate = evidence()
     with pytest.raises(ValidationError, match="duplicate evidence reference"):
@@ -107,4 +120,17 @@ def test_duplicate_evidence_references_are_rejected() -> None:
             state_category=StateCategory.REFERENCE,
             asserted_at=NOW,
             evidence=(duplicate, duplicate),
+        )
+
+
+def test_relationship_rejects_evidence_from_an_unrelated_city() -> None:
+    unrelated = evidence().model_copy(update={"city_id": "mainz"})
+    with pytest.raises(ValidationError, match="evidence city must match"):
+        RelationshipAssertion(
+            subject=entity(),
+            predicate="located_in",
+            object=entity(entity_id="district_1"),
+            state_category=StateCategory.REFERENCE,
+            asserted_at=NOW,
+            evidence=(unrelated,),
         )
