@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from urbanium.core.entity import EntityReference
 from urbanium.core.provider import (
     Availability,
     Freshness,
@@ -31,7 +32,11 @@ def observation(**overrides: object) -> Observation:
         "city_id": "mainz",
         "source_id": "dwd_open_data",
         "capability_id": "weather",
-        "entity_id": "station_1",
+        "entity": EntityReference(
+            city_id="mainz",
+            entity_type="weather_station",
+            entity_id="station_1",
+        ),
         "quantity_id": "air_temperature",
         "value": Decimal("12.3"),
         "unit": "Cel",
@@ -156,6 +161,17 @@ def test_result_cannot_claim_another_source_or_city() -> None:
     )
     with pytest.raises(ValueError, match="does not match provider descriptor"):
         validate_provider_result(DESCRIPTOR, result)
+
+
+def test_observation_entity_must_belong_to_observation_city() -> None:
+    with pytest.raises(ValidationError, match="entity city must match observation city"):
+        observation(
+            entity=EntityReference(
+                city_id="berlin",
+                entity_type="weather_station",
+                entity_id="station_1",
+            )
+        )
 
 
 def test_observation_rejects_naive_or_reverse_timestamps() -> None:

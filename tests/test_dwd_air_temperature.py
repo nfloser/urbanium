@@ -83,7 +83,7 @@ def test_berlin_and_mainz_normalize_through_the_same_adapter() -> None:
 
         assert result.availability is Availability.AVAILABLE
         assert result.observations[0].city_id == city_id
-        assert result.observations[0].entity_id == f"dwd_station_{config.station_id}"
+        assert result.observations[0].entity.entity_id == f"dwd_station_{config.station_id}"
 
 
 def test_dwd_row_is_normalized_with_quality_time_unit_and_provenance() -> None:
@@ -101,7 +101,7 @@ def test_dwd_row_is_normalized_with_quality_time_unit_and_provenance() -> None:
     assert observation.quality_code == "2"
     assert observation.city_id == "berlin"
     assert observation.source_id == "dwd_open_data"
-    assert observation.entity_id == "dwd_station_00433"
+    assert observation.entity.canonical_id == "berlin:weather_station:dwd_station_00433"
 
 
 def test_freshness_is_assessed_without_changing_availability() -> None:

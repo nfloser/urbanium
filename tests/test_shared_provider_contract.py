@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from tests.contracts.provider import ProviderContractCases, assert_provider_contract
+from urbanium.core.entity import EntityReference
 from urbanium.core.provider import (
     Availability,
     Freshness,
@@ -31,7 +32,11 @@ def observation(*, source_id: str = "dwd_open_data") -> Observation:
         city_id="mainz",
         source_id=source_id,
         capability_id="weather",
-        entity_id="station_1",
+        entity=EntityReference(
+            city_id="mainz",
+            entity_type="weather_station",
+            entity_id="station_1",
+        ),
         quantity_id="air_temperature",
         value=Decimal("12.3"),
         unit="Cel",
