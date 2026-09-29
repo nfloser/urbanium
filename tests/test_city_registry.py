@@ -33,6 +33,12 @@ def test_capabilities_are_explicit_instead_of_fabricated() -> None:
     assert not registry.supports("mainz", "realtime_transport")
 
 
+def test_undeclared_capability_is_not_supported() -> None:
+    registry = CityRegistry.from_directory(CITIES)
+
+    assert not registry.supports("mainz", "not_declared")
+
+
 def test_configured_capability_has_a_verified_source() -> None:
     registry = CityRegistry.from_directory(CITIES)
 
