@@ -25,7 +25,8 @@ def test_capabilities_are_explicit_instead_of_fabricated() -> None:
 
     assert registry.capability("berlin", "weather").support is CapabilitySupport.CONFIGURED
     assert registry.capability("mainz", "weather").support is CapabilitySupport.CONFIGURED
-    assert registry.capability("berlin", "realtime_transport").support is CapabilitySupport.CONFIGURED
+    berlin_transport = registry.capability("berlin", "realtime_transport")
+    assert berlin_transport.support is CapabilitySupport.CONFIGURED
     assert registry.capability("mainz", "realtime_transport").support is CapabilitySupport.CANDIDATE
     assert registry.capability("mainz", "river_level").support is CapabilitySupport.CONFIGURED
     assert registry.capability("berlin", "river_level").support is CapabilitySupport.UNKNOWN
