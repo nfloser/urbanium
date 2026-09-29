@@ -29,7 +29,9 @@ See [documentation](docs/index.md), [architecture](docs/architecture/overview.md
 
 ## Current status
 
-The repository is in architecture/bootstrap stage. Issue #1 establishes the engineering baseline. Issue #2 will implement the first executable vertical slice: one shared city/capability registry used by both Berlin and Mainz.
+The architecture/engineering baseline is established. The first executable vertical slice adds a versioned city/capability/source registry in which Berlin and Mainz validate through the same core contracts while retaining different evidence-backed capability sets.
+
+This registry describes static deployment support. Provider health, freshness, live observations and last-known-good runtime behavior are intentionally deferred to the provider/runtime slices rather than being conflated with configuration.
 
 ## Development
 
