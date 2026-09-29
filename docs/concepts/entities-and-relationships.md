@@ -28,4 +28,4 @@ Cross-city relationships are allowed because regional infrastructure can cross a
 
 ## Semantic projection boundary
 
-Canonical identifiers contain only Urbanium deployment identifiers. A later bounded projection can map them and selected predicates to RDF IRIs and established vocabularies, then validate the exported shape with SHACL. That projection must preserve the canonical identity, state category and evidence and must not become the only execution-state representation. Persistent graph storage and ontology mappings remain outside this implemented slice.
+Canonical identifiers contain only Urbanium deployment identifiers. The [bounded RDF projection](../ontology/rdf-projection.md) maps them and selected predicates to RDF IRIs and established vocabularies, preserves state and evidence, and validates the exported shape with SHACL. It remains separate from canonical execution state. Persistent graph storage and broad ontology mapping are not implemented.

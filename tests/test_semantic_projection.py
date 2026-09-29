@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 import pytest
-from rdflib import RDF, XSD, Literal, URIRef
+from rdflib import PROV, RDF, XSD, Literal, URIRef
 
 from urbanium.core.entity import (
     EntityReference,
@@ -11,7 +11,6 @@ from urbanium.core.entity import (
 )
 from urbanium.semantics.rdf import (
     GEO,
-    PROV,
     SOSA,
     URBANIUM,
     SemanticValidationError,
@@ -63,6 +62,7 @@ def test_relationship_projection_uses_standard_vocabularies_and_preserves_proven
     assert (object_, RDF.type, GEO.Feature) in graph
     assert (subject, GEO.sfWithin, object_) in graph
     assert (relationship, RDF.type, RDF.Statement) in graph
+    assert (relationship, RDF.type, PROV.Entity) in graph
     assert (relationship, RDF.subject, subject) in graph
     assert (relationship, RDF.predicate, GEO.sfWithin) in graph
     assert (relationship, RDF.object, object_) in graph
@@ -73,8 +73,11 @@ def test_relationship_projection_uses_standard_vocabularies_and_preserves_proven
         Literal(NOW, datatype=XSD.dateTime),
     ) in graph
     assert (relationship, PROV.wasDerivedFrom, evidence) in graph
+    assert (evidence, RDF.type, PROV.Entity) in graph
+    assert (evidence, RDF.type, URBANIUM.Evidence) in graph
     assert (evidence, URBANIUM.sourceId, Literal("dwd_open_data")) in graph
     assert (evidence, URBANIUM.recordId, Literal("stations/00433")) in graph
+    assert (evidence, URBANIUM.retrievedAt, Literal(NOW, datatype=XSD.dateTime)) in graph
 
 
 def test_projection_identifiers_and_graph_are_deterministic() -> None:
