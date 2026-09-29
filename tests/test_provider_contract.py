@@ -37,6 +37,8 @@ def observation(**overrides: object) -> Observation:
         "unit": "Cel",
         "observed_at": NOW,
         "received_at": NOW,
+        "quality_scheme": "fixture_quality",
+        "quality_code": "2",
     }
     data.update(overrides)
     return Observation.model_validate(data)
@@ -51,6 +53,7 @@ def test_available_result_can_be_stale_without_becoming_unavailable() -> None:
 
     validate_provider_result(DESCRIPTOR, result)
     assert result.observations[0].value == Decimal("12.3")
+    assert result.observations[0].quality_code == "2"
 
 
 def test_adapter_contract_can_be_reused_for_a_provider_implementation() -> None:
