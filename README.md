@@ -31,7 +31,7 @@ See [documentation](docs/index.md), [architecture](docs/architecture/overview.md
 
 The architecture/engineering baseline is established. The first executable vertical slice adds a versioned city/capability/source registry in which Berlin and Mainz validate through the same core contracts while retaining different evidence-backed capability sets.
 
-This registry describes static deployment support. Provider health, freshness, live observations and last-known-good runtime behavior are intentionally deferred to the provider/runtime slices rather than being conflated with configuration.
+This registry describes static deployment support. The first [provider contract](docs/concepts/provider-contracts.md) defines numeric observation and read-outcome semantics. It does not yet fetch live data or implement a last-known-good state store.
 
 ## Development
 
