@@ -1,0 +1,6 @@
+schema_version: "1"
+city_id: mainz
+source_id: dwd_open_data
+station_id: "03137"
+station_name: Mainz-Lerchenberg (ZDF)
+freshness_minutes: 90

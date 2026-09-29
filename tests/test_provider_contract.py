@@ -37,6 +37,8 @@ def observation(**overrides: object) -> Observation:
         "unit": "Cel",
         "observed_at": NOW,
         "received_at": NOW,
+        "quality_scheme": "fixture_quality",
+        "quality_code": "2",
     }
     data.update(overrides)
     return Observation.model_validate(data)
@@ -51,6 +53,7 @@ def test_available_result_can_be_stale_without_becoming_unavailable() -> None:
 
     validate_provider_result(DESCRIPTOR, result)
     assert result.observations[0].value == Decimal("12.3")
+    assert result.observations[0].quality_code == "2"
 
 
 def test_adapter_contract_can_be_reused_for_a_provider_implementation() -> None:
@@ -160,3 +163,15 @@ def test_observation_rejects_naive_or_reverse_timestamps() -> None:
         observation(observed_at=datetime(2026, 9, 29, 12))
     with pytest.raises(ValidationError, match="received_at"):
         observation(received_at=datetime(2026, 9, 29, 11, tzinfo=UTC))
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"quality_scheme": None},
+        {"quality_code": None},
+    ],
+)
+def test_observation_requires_complete_quality_provenance(overrides: dict[str, object]) -> None:
+    with pytest.raises(ValidationError, match="quality_scheme and quality_code"):
+        observation(**overrides)
