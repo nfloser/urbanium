@@ -163,3 +163,15 @@ def test_observation_rejects_naive_or_reverse_timestamps() -> None:
         observation(observed_at=datetime(2026, 9, 29, 12))
     with pytest.raises(ValidationError, match="received_at"):
         observation(received_at=datetime(2026, 9, 29, 11, tzinfo=UTC))
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"quality_scheme": None},
+        {"quality_code": None},
+    ],
+)
+def test_observation_requires_complete_quality_provenance(overrides: dict[str, object]) -> None:
+    with pytest.raises(ValidationError, match="quality_scheme and quality_code"):
+        observation(**overrides)

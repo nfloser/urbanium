@@ -1,0 +1,6 @@
+schema_version: "1"
+city_id: berlin
+source_id: dwd_open_data
+station_id: "00433"
+station_name: Berlin-Tempelhof
+freshness_minutes: 90

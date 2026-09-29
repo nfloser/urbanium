@@ -27,6 +27,9 @@ where = ["src"]
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+  "live: optional external-provider smoke tests excluded unless explicitly enabled",
+]
 
 [tool.ruff]
 line-length = 100

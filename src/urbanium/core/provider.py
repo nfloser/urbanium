@@ -61,6 +61,14 @@ class Observation(BaseModel):
     unit: str = Field(min_length=1)
     observed_at: datetime
     received_at: datetime
+    quality_scheme: Identifier | None = None
+    quality_code: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def validate_quality(self) -> "Observation":
+        if (self.quality_scheme is None) != (self.quality_code is None):
+            raise ValueError("quality_scheme and quality_code must be provided together")
+        return self
 
     @model_validator(mode="after")
     def validate_time(self) -> "Observation":

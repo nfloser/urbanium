@@ -18,17 +18,17 @@ FIXTURES = ROOT / "tests" / "fixtures" / "dwd"
 NOW = datetime(2026, 9, 29, 12, 30, tzinfo=UTC)
 
 
-def archive(fixture: str) -> bytes:
-    payload = (FIXTURES / fixture).read_bytes()
+def archive(fixture: str, station_id: str = "00433") -> bytes:
+    payload = (FIXTURES / fixture).read_bytes().replace(b"00433", station_id.encode("ascii"))
     buffer = BytesIO()
     with ZipFile(buffer, "w", ZIP_DEFLATED) as target:
-        target.writestr("produkt_zehn_min_tu_20260929_20260929_00433_now.txt", payload)
+        target.writestr(f"produkt_zehn_now_tu_20260929_20260929_{station_id}.txt", payload)
     return buffer.getvalue()
 
 
-def fetch(payload: bytes) -> Callable[[str, float], bytes]:
+def fetch(payload: bytes, station_id: str = "00433") -> Callable[[str, float], bytes]:
     def fixture_fetcher(url: str, timeout: float) -> bytes:
-        assert url.endswith("/10minutenwerte_TU_00433_now.zip")
+        assert url.endswith(f"/10minutenwerte_TU_{station_id}_now.zip")
         assert timeout == 10.0
         return payload
 
@@ -66,6 +66,24 @@ def test_same_adapter_configuration_contract_is_used_by_berlin_and_mainz() -> No
     assert mainz.station_id == "03137"
     assert berlin.city_id == "berlin"
     assert mainz.city_id == "mainz"
+
+
+def test_berlin_and_mainz_normalize_through_the_same_adapter() -> None:
+    for city_id in ("berlin", "mainz"):
+        config = load_dwd_air_temperature_config(
+            ROOT / "cities" / city_id / "providers" / "dwd_air_temperature.yaml"
+        )
+        subject = DwdCdcAirTemperatureProvider(
+            config,
+            fetcher=fetch(archive("air_temperature_now.csv", config.station_id), config.station_id),
+            clock=lambda: NOW,
+        )
+
+        result = subject.read()
+
+        assert result.availability is Availability.AVAILABLE
+        assert result.observations[0].city_id == city_id
+        assert result.observations[0].entity_id == f"dwd_station_{config.station_id}"
 
 
 def test_dwd_row_is_normalized_with_quality_time_unit_and_provenance() -> None:
@@ -122,6 +140,27 @@ def test_timeout_is_an_explicit_unavailable_result() -> None:
     assert result.freshness is Freshness.UNKNOWN
     assert result.error is not None
     assert result.error.code is ProviderErrorCode.TIMEOUT
+
+
+def test_oversized_decompressed_product_is_rejected() -> None:
+    buffer = BytesIO()
+    with ZipFile(buffer, "w", ZIP_DEFLATED) as target:
+        target.writestr(
+            "produkt_zehn_now_tu_20260929_20260929_00433.txt",
+            b"x" * 2_000_001,
+        )
+
+    subject = DwdCdcAirTemperatureProvider(
+        provider().config,
+        fetcher=fetch(buffer.getvalue()),
+        clock=lambda: NOW,
+    )
+
+    result = subject.read()
+
+    assert result.availability is Availability.UNAVAILABLE
+    assert result.error is not None
+    assert result.error.code is ProviderErrorCode.INVALID_RESPONSE
 
 
 def test_dwd_adapter_passes_shared_provider_contract() -> None:

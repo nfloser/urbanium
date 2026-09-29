@@ -1,0 +1,1 @@
+"""Deutscher Wetterdienst provider adapters."""

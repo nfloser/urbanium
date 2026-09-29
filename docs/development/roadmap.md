@@ -7,7 +7,7 @@ The GitHub issues are the executable roadmap. Dependencies are intentional; date
 - **#1 Bootstrap architecture and engineering baseline** — completed.
 - **#2 First vertical slice: city and capability registry** — implemented; shared contracts and Berlin/Mainz deployment definitions prove the first portability boundary.
 - **#3 Provider adapter contracts and shared contract tests** — implemented; numeric observation sources now share binding, outcome, provenance and reusable contract-test semantics.
-- **#4 Shared weather vertical slice** — depends on #3; first real shared provider for Berlin and Mainz.
+- **#4 Shared weather vertical slice** — implemented for DWD CDC 10-minute air temperature in Berlin and Mainz.
 
 ## P1: semantics and reusable intelligence
 

@@ -6,7 +6,7 @@ timezone: Europe/Berlin
 capabilities:
   - id: weather
     support: configured
-    notes: DWD is the initial shared meteorological provider candidate implemented later.
+    notes: DWD CDC 10-minute air temperature is bound through the shared weather adapter.
   - id: realtime_transport
     support: configured
     notes: VBB publishes GTFS-Realtime for Berlin/Brandenburg.
@@ -25,11 +25,12 @@ sources:
     authority: authoritative
     capabilities: [weather]
     endpoint: https://opendata.dwd.de/
-    update_frequency: product-specific
+    update_frequency: hourly
     license:
+      identifier: CC BY 4.0
       terms_url: https://www.dwd.de/DE/leistungen/opendata/hilfe.html
-      redistribution: unknown
-      notes: Verify the selected product's current terms before redistribution.
+      redistribution: permitted
+      notes: Attribution and notice requirements apply to DWD CDC data.
   - id: vbb_gtfs_rt
     provider: Verkehrsverbund Berlin-Brandenburg
     domain: mobility
