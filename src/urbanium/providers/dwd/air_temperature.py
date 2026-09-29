@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from yaml import YAMLError, safe_load
 
 from urbanium.core.city import Identifier
+from urbanium.core.entity import EntityReference
 from urbanium.core.provider import (
     Availability,
     Freshness,
@@ -191,7 +192,11 @@ class DwdCdcAirTemperatureProvider:
                         city_id=self.config.city_id,
                         source_id=self.config.source_id,
                         capability_id="weather",
-                        entity_id=f"dwd_station_{station_id}",
+                        entity=EntityReference(
+                            city_id=self.config.city_id,
+                            entity_type="weather_station",
+                            entity_id=f"dwd_station_{station_id}",
+                        ),
                         quantity_id="air_temperature",
                         value=value,
                         unit="Cel",

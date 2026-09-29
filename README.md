@@ -31,7 +31,7 @@ See [documentation](docs/index.md), [architecture](docs/architecture/overview.md
 
 The architecture/engineering baseline is established. The first executable vertical slice adds a versioned city/capability/source registry in which Berlin and Mainz validate through the same core contracts while retaining different evidence-backed capability sets.
 
-This registry describes static deployment support. The first [provider contract](docs/concepts/provider-contracts.md) defines numeric observation and read-outcome semantics, including a reusable adapter contract suite. A shared [DWD CDC adapter](docs/providers/dwd-air-temperature.md) now normalizes current air-temperature observations for Berlin and Mainz. A persistent last-known-good state store is not implemented yet.
+This registry describes static deployment support. The first [provider contract](docs/concepts/provider-contracts.md) defines numeric observation and read-outcome semantics, including a reusable adapter contract suite. A shared [DWD CDC adapter](docs/providers/dwd-air-temperature.md) now normalizes current air-temperature observations for Berlin and Mainz onto typed [entity identities](docs/concepts/entities-and-relationships.md). Evidence-backed relationship contracts provide a storage-independent foundation for the semantic layer; RDF projection and a persistent last-known-good state store are not implemented yet.
 
 ## Development
 

@@ -8,6 +8,7 @@ from typing import Protocol
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from urbanium.core.city import CapabilitySupport, CityDefinition, Identifier, SourceStatus
+from urbanium.core.entity import EntityReference
 
 
 class Availability(StrEnum):
@@ -55,7 +56,7 @@ class Observation(BaseModel):
     city_id: Identifier
     source_id: Identifier
     capability_id: Identifier
-    entity_id: Identifier
+    entity: EntityReference
     quantity_id: Identifier
     value: Decimal
     unit: str = Field(min_length=1)
@@ -63,6 +64,12 @@ class Observation(BaseModel):
     received_at: datetime
     quality_scheme: Identifier | None = None
     quality_code: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def validate_entity(self) -> "Observation":
+        if self.entity.city_id != self.city_id:
+            raise ValueError("entity city must match observation city")
+        return self
 
     @model_validator(mode="after")
     def validate_quality(self) -> "Observation":

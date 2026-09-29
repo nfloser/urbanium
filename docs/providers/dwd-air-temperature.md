@@ -15,7 +15,7 @@ Changing or adding a city does not require a core-code change. A deployment supp
 
 ## Normalization
 
-Only the latest valid `TT_10` record is emitted in this slice. It maps to canonical quantity `air_temperature` and UCUM unit `Cel`. `MESS_DATUM` is interpreted as UTC, while `QN` is preserved without reinterpretation as quality scheme `dwd_qn` and its original code. The DWD station becomes the observation entity and the configured city/source/capability binding supplies provenance.
+Only the latest valid `TT_10` record is emitted in this slice. It maps to canonical quantity `air_temperature` and UCUM unit `Cel`. `MESS_DATUM` is interpreted as UTC, while `QN` is preserved without reinterpretation as quality scheme `dwd_qn` and its original code. The DWD station becomes a typed `weather_station` [entity reference](../concepts/entities-and-relationships.md), and the configured city/source/capability binding supplies provenance.
 
 Missing values (`-999`) are omitted. A mixture of valid and malformed records yields a `degraded` result with the latest valid observation. A malformed archive with no valid records is `unavailable`. Network errors and timeouts become typed provider results rather than platform exceptions. Freshness is assessed separately from availability.
 
