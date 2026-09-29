@@ -22,4 +22,18 @@ This contract returns only the current read outcome. A future state store may re
 
 ## Contract test pattern
 
-Each adapter test supplies a fixture-backed `ObservationProvider`, calls `read()` and passes its descriptor and result to `validate_provider_result()`. The shared validation rejects cross-city, cross-source and cross-capability records; model validation rejects impossible availability/error combinations and naive timestamps. Provider-specific tests must additionally verify schema mapping, units, entity identity, freshness policy and upstream error mapping. External-network smoke tests remain separate from deterministic CI.
+Each adapter supplies three deterministic, fixture-backed instances to `ProviderContractCases`: one successful read, one partial/degraded read and one unavailable read. Its tests call `assert_provider_contract()` from `tests.contracts.provider`. The shared suite verifies that all cases use one descriptor, checks the binding against city configuration, requires the expected explicit outcome and rejects cross-city, cross-source and cross-capability observations.
+
+Provider-specific tests must additionally verify schema mapping, units, entity identity, freshness policy and upstream error mapping. External-network smoke tests remain separate from deterministic CI. A minimal adapter test has this shape:
+
+```python
+def test_provider_contract() -> None:
+    assert_provider_contract(
+        ProviderContractCases(
+            city=city,
+            available=provider_with_fixture("success.json"),
+            degraded=provider_with_fixture("partial.json"),
+            unavailable=provider_with_timeout(),
+        )
+    )
+```
