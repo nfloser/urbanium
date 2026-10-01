@@ -59,11 +59,12 @@ class LicenseMetadata(BaseModel):
 
 
 class CapabilityDefinition(BaseModel):
-    """A capability declared by a city deployment."""
+    """A versioned capability contract declared by a city deployment."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: Identifier
+    version: Literal["1"] = "1"
     support: CapabilitySupport
     notes: str | None = None
 
