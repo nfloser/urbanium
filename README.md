@@ -31,7 +31,11 @@ See [documentation](docs/index.md), [architecture](docs/architecture/overview.md
 
 The architecture/engineering baseline is established. The first executable vertical slice adds a versioned city/capability/source registry in which Berlin and Mainz validate through the same core contracts while retaining different evidence-backed capability sets.
 
-This registry describes static deployment support. The first [provider contract](docs/concepts/provider-contracts.md) defines numeric observation and read-outcome semantics, including a reusable adapter contract suite. A shared [DWD CDC adapter](docs/providers/dwd-air-temperature.md) normalizes current air-temperature observations for Berlin and Mainz onto typed [entity identities](docs/concepts/entities-and-relationships.md). Evidence-backed relationships have a bounded [RDF/SHACL projection](docs/ontology/rdf-projection.md) while canonical execution remains independent of RDF storage. A persistent last-known-good state store is not implemented yet.
+This registry describes static deployment support. The first [provider contract](docs/concepts/provider-contracts.md) defines numeric observation and read-outcome semantics, including a reusable adapter contract suite. A shared [DWD CDC adapter](docs/providers/dwd-air-temperature.md) normalizes current air-temperature observations for Berlin and Mainz onto typed [entity identities](docs/concepts/entities-and-relationships.md). Evidence-backed relationships have a bounded [RDF/SHACL projection](docs/ontology/rdf-projection.md) while canonical execution remains independent of RDF storage.
+
+The reusable-intelligence layer now has [deterministic component descriptors and capability resolution](docs/concepts/components.md). Agents and models can declare exact capability-contract versions and versioned derived outputs, and the same resolver reports different valid outcomes for Berlin and Mainz without city-specific logic. This is descriptor and resolution infrastructure only: component execution, derived-result provenance and orchestration remain part of the open agent/model framework work.
+
+A persistent last-known-good state store is not implemented yet.
 
 ## Development
 

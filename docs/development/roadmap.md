@@ -13,7 +13,7 @@ The GitHub issues are the executable roadmap. Dependencies are intentional; date
 
 - **#5 Semantic projection and relationship model** — implemented through #14's canonical relationship contracts and #16's bounded RDF/SHACL projection.
 - **#6 Versioned machine-to-machine platform API** — depends on #2 and #3.
-- **#7 Generic agent/model capability framework** — depends on #2 and #3.
+- **#7 Generic agent/model capability framework** — depends on #2 and #3. #18 provides the deterministic descriptor, registry and city capability-resolution foundation; execution and derived-result provenance remain open.
 
 ## P2: prove cross-domain value
 
