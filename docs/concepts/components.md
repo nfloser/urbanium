@@ -34,8 +34,20 @@ Failures are explicit and machine-readable:
 
 This makes portability observable rather than fabricated. A component that requires `weather@1` and `realtime_transport@1` resolves for Berlin in the current reference deployments but not for Mainz, where realtime transport remains a candidate integration.
 
+## Run outcome and provenance contracts
+
+After capability resolution, a deterministic run can report one of three states:
+
+- `available`: at least one declared output was produced and no problem is present;
+- `degraded`: declared output is present together with one or more explicit problems;
+- `unavailable`: no output is present and at least one explicit problem explains the failure.
+
+Every run records the city deployment, exact component id/version, exact capability-contract input versions and a caller-supplied timezone-aware execution timestamp. A run is validated against both the descriptor and the successful resolution that authorized it. An unresolved component does not produce a run envelope; its reason remains in `ComponentResolution`. `RunStatus.UNAVAILABLE` therefore means execution became unavailable only after capability resolution succeeded. Undeclared outputs, output version/category mismatches and input-provenance mismatches are rejected.
+
+`DerivedOutput` deliberately identifies the declared output contract rather than inventing one universal payload schema. Domain-specific result values belong to the corresponding versioned output contract; provider payloads must not leak into this core envelope.
+
 ## Boundary of the current implementation
 
-This layer does **not** execute components. It does not contain an LLM planner, workflow scheduler, plugin runtime or city-specific dispatch. It also does not yet define the provenance envelope for produced derived results.
+The core now defines descriptors, city capability resolution, run-state invariants and reconstructable run provenance. It still does **not** invoke component code.
 
-Those concerns remain part of the broader agent/model framework. Keeping descriptor resolution separate means later execution can only start after deterministic capability compatibility has already been established.
+There is no scheduler, plugin loader, workflow engine, LLM planner or city-specific dispatch in this layer. The next execution slice must bind deterministic component implementations to these contracts without weakening the resolution and provenance guarantees.
