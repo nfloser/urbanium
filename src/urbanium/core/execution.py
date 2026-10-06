@@ -57,9 +57,7 @@ class ComponentRunProvenance(BaseModel):
     @field_validator("executed_at")
     @classmethod
     def validate_executed_at(cls, value: datetime) -> datetime:
-        if value.tzinfo is None or value.utcoffset() is None:
-            raise ValueError("executed_at must be timezone-aware")
-        return value
+        return _validate_execution_time(value)
 
     @model_validator(mode="after")
     def reject_duplicate_inputs(self) -> Self:
@@ -160,6 +158,8 @@ def execute_component(
     if not resolution.available:
         return ComponentExecutionAttempt(resolution=resolution)
 
+    _validate_execution_time(executed_at)
+
     duplicate_inputs = _duplicates(item.capability_id for item in inputs)
     if duplicate_inputs:
         raise ValueError("duplicate capability input ids: " + ", ".join(duplicate_inputs))
@@ -253,6 +253,12 @@ def _validate_run_state(
         raise ValueError("degraded run requires outputs and problems")
     if status is RunStatus.UNAVAILABLE and (outputs or not problems):
         raise ValueError("unavailable run requires no outputs and problems")
+
+
+def _validate_execution_time(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("executed_at must be timezone-aware")
+    return value
 
 
 def _duplicates(values: Iterable[str]) -> list[str]:

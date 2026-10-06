@@ -223,6 +223,30 @@ def test_runtime_unavailable_is_distinct_from_failed_resolution() -> None:
     assert component.calls == 1
 
 
+def test_invalid_execution_time_is_rejected_before_invocation() -> None:
+    city = CityRegistry.from_directory(CITIES).city("berlin")
+    component = RecordingComponent(
+        descriptor(CapabilityRequirement(capability_id="weather", version="1")),
+        available_outcome(),
+    )
+
+    with pytest.raises(ValueError, match="executed_at must be timezone-aware"):
+        execute_component(
+            city,
+            component,
+            inputs=(
+                CapabilityInput(
+                    capability_id="weather",
+                    version="1",
+                    payload={"air_temperature_c": 12.5},
+                ),
+            ),
+            executed_at=datetime(2026, 10, 6, 9, 0),
+        )
+
+    assert component.calls == 0
+
+
 def test_unexpected_component_exceptions_propagate() -> None:
     city = CityRegistry.from_directory(CITIES).city("berlin")
     component = FailingComponent(
