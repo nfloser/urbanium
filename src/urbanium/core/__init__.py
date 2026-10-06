@@ -23,9 +23,19 @@ from urbanium.core.component import (
     UnavailableCapability,
     resolve_component,
 )
+from urbanium.core.execution import (
+    CapabilityInputProvenance,
+    ComponentRunProblem,
+    ComponentRunProvenance,
+    ComponentRunResult,
+    DerivedOutput,
+    RunStatus,
+    validate_component_run,
+)
 
 __all__ = [
     "CapabilityDefinition",
+    "CapabilityInputProvenance",
     "CapabilityRequirement",
     "CapabilitySupport",
     "CityDefinition",
@@ -34,14 +44,20 @@ __all__ = [
     "ComponentOutput",
     "ComponentRegistry",
     "ComponentResolution",
+    "ComponentRunProblem",
+    "ComponentRunProvenance",
+    "ComponentRunResult",
+    "DerivedOutput",
     "DerivedStateCategory",
     "LicenseMetadata",
     "RedistributionStatus",
     "ResolutionReasonCode",
+    "RunStatus",
     "SourceAuthority",
     "SourceDefinition",
     "SourceStatus",
     "UnavailableCapability",
     "VersionIdentifier",
     "resolve_component",
+    "validate_component_run",
 ]
