@@ -181,9 +181,7 @@ def test_candidate_capability_is_not_presented_as_runtime_available() -> None:
 
 
 def test_missing_runtime_binding_is_explicit() -> None:
-    response = client().get(
-        "/api/v1/cities/mainz/sources/dwd_open_data/observations/weather"
-    )
+    response = client().get("/api/v1/cities/mainz/sources/dwd_open_data/observations/weather")
 
     assert response.status_code == 503
     assert response.json()["code"] == "provider_not_bound"
