@@ -15,9 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
     reason="set URBANIUM_LIVE_VBB=1 to access the VBB GTFS-Realtime feed",
 )
 def test_current_vbb_gtfs_rt_feed_is_readable() -> None:
-    config = load_vbb_gtfs_rt_config(
-        ROOT / "cities" / "berlin" / "providers" / "vbb_gtfs_rt.yaml"
-    )
+    config = load_vbb_gtfs_rt_config(ROOT / "cities" / "berlin" / "providers" / "vbb_gtfs_rt.yaml")
 
     result = VbbGtfsRtProvider(config).read()
 

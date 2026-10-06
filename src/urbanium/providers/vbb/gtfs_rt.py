@@ -55,16 +55,12 @@ def load_vbb_gtfs_rt_config(path: Path) -> VbbGtfsRtConfig:
             f"failed to read VBB GTFS-RT config {path}: {exc}"
         ) from exc
     if not isinstance(raw, dict):
-        raise VbbGtfsRtConfigurationError(
-            f"VBB GTFS-RT config {path} must contain a mapping"
-        )
+        raise VbbGtfsRtConfigurationError(f"VBB GTFS-RT config {path} must contain a mapping")
     try:
         return VbbGtfsRtConfig.model_validate(raw)
     except ValidationError as exc:
         details = "; ".join(error["msg"] for error in exc.errors())
-        raise VbbGtfsRtConfigurationError(
-            f"invalid VBB GTFS-RT config {path}: {details}"
-        ) from exc
+        raise VbbGtfsRtConfigurationError(f"invalid VBB GTFS-RT config {path}: {details}") from exc
 
 
 class VbbGtfsRtProvider:

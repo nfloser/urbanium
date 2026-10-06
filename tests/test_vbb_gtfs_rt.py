@@ -63,9 +63,7 @@ def provider(
 
 
 def test_reference_configuration_binds_the_verified_berlin_source() -> None:
-    config = load_vbb_gtfs_rt_config(
-        ROOT / "cities" / "berlin" / "providers" / "vbb_gtfs_rt.yaml"
-    )
+    config = load_vbb_gtfs_rt_config(ROOT / "cities" / "berlin" / "providers" / "vbb_gtfs_rt.yaml")
 
     assert config.city_id == "berlin"
     assert config.source_id == "vbb_gtfs_rt"
