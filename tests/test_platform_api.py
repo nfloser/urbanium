@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from urbanium.api.app import API_VERSION, create_app
+from urbanium.api.server import create_runtime_app
 from urbanium.core.entity import EntityReference
 from urbanium.core.provider import (
     Availability,
@@ -96,6 +97,15 @@ def unavailable_result() -> ProviderResult:
 def client(*providers: FixtureProvider) -> TestClient:
     registry = CityRegistry.from_directory(CITIES)
     return TestClient(create_app(registry, providers=providers))
+
+
+def test_runtime_composition_loads_reference_provider_bindings_without_network() -> None:
+    api = TestClient(create_runtime_app(CITIES))
+
+    response = api.get("/api/v1/cities")
+
+    assert response.status_code == 200
+    assert [item["id"] for item in response.json()["cities"]] == ["berlin", "mainz"]
 
 
 def test_versioned_city_capability_and_source_discovery() -> None:
