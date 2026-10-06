@@ -9,6 +9,7 @@ from urbanium.core.city import (
     SourceAuthority,
     SourceDefinition,
     SourceStatus,
+    VersionIdentifier,
 )
 from urbanium.core.component import (
     CapabilityRequirement,
@@ -41,5 +42,6 @@ __all__ = [
     "SourceDefinition",
     "SourceStatus",
     "UnavailableCapability",
+    "VersionIdentifier",
     "resolve_component",
 ]

@@ -7,6 +7,10 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 Identifier = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")]
+VersionIdentifier = Annotated[
+    str,
+    Field(min_length=1, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$"),
+]
 
 
 class CapabilitySupport(StrEnum):
@@ -64,7 +68,7 @@ class CapabilityDefinition(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: Identifier
-    version: Literal["1"] = "1"
+    version: VersionIdentifier = "1"
     support: CapabilitySupport
     notes: str | None = None
 

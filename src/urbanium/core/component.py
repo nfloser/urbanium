@@ -2,16 +2,16 @@
 
 from collections.abc import Iterable
 from enum import StrEnum
-from typing import Annotated, Self
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
-from urbanium.core.city import CapabilitySupport, CityDefinition, Identifier
-
-ContractVersion = Annotated[
-    str,
-    Field(min_length=1, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$"),
-]
+from urbanium.core.city import (
+    CapabilitySupport,
+    CityDefinition,
+    Identifier,
+    VersionIdentifier,
+)
 
 
 class ComponentKind(StrEnum):
@@ -36,7 +36,7 @@ class CapabilityRequirement(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     capability_id: Identifier
-    version: ContractVersion
+    version: VersionIdentifier
 
 
 class ComponentOutput(BaseModel):
@@ -45,7 +45,7 @@ class ComponentOutput(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: Identifier
-    version: ContractVersion
+    version: VersionIdentifier
     state_category: DerivedStateCategory
 
 
@@ -56,7 +56,7 @@ class ComponentDescriptor(BaseModel):
 
     id: Identifier
     kind: ComponentKind
-    version: ContractVersion
+    version: VersionIdentifier
     inputs: tuple[CapabilityRequirement, ...] = ()
     outputs: tuple[ComponentOutput, ...] = ()
 
@@ -128,8 +128,8 @@ class UnavailableCapability(BaseModel):
 
     capability_id: Identifier
     reason: ResolutionReasonCode
-    required_version: ContractVersion
-    available_version: ContractVersion | None = None
+    required_version: VersionIdentifier
+    available_version: VersionIdentifier | None = None
     support: CapabilitySupport | None = None
 
 
@@ -140,7 +140,7 @@ class ComponentResolution(BaseModel):
 
     city_id: Identifier
     component_id: Identifier
-    component_version: ContractVersion
+    component_version: VersionIdentifier
     unavailable: tuple[UnavailableCapability, ...] = ()
 
     @property

@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from urbanium.core.city import CapabilityDefinition, CapabilitySupport
 from urbanium.core.component import (
     CapabilityRequirement,
     ComponentDescriptor,
@@ -12,7 +13,6 @@ from urbanium.core.component import (
     ResolutionReasonCode,
     resolve_component,
 )
-from urbanium.core.city import CapabilitySupport
 from urbanium.registry import CityRegistry
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +39,16 @@ def descriptor(
             ),
         ),
     )
+
+
+def test_capability_contract_versions_can_advance_without_city_schema_changes() -> None:
+    capability = CapabilityDefinition(
+        id="weather",
+        version="2",
+        support=CapabilitySupport.UNKNOWN,
+    )
+
+    assert capability.version == "2"
 
 
 def test_descriptor_rejects_duplicate_requirements_and_outputs() -> None:
