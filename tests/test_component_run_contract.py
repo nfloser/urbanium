@@ -194,12 +194,12 @@ def test_component_and_input_provenance_must_match_the_resolved_descriptor() -> 
         validate_component_run(descriptor(), resolution(), result)
 
 
-def test_unresolved_component_cannot_report_derived_outputs() -> None:
+def test_unresolved_component_cannot_be_reported_as_a_run() -> None:
     result = ComponentRunResult(
-        status=RunStatus.AVAILABLE,
+        status=RunStatus.UNAVAILABLE,
         provenance=provenance(),
-        outputs=(output(),),
+        problems=(problem(),),
     )
 
-    with pytest.raises(ValueError, match="unresolved component cannot produce outputs"):
+    with pytest.raises(ValueError, match="unresolved component cannot produce a run result"):
         validate_component_run(descriptor(), resolution(available=False), result)

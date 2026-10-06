@@ -42,7 +42,7 @@ After capability resolution, a deterministic run can report one of three states:
 - `degraded`: declared output is present together with one or more explicit problems;
 - `unavailable`: no output is present and at least one explicit problem explains the failure.
 
-Every run records the city deployment, exact component id/version, exact capability-contract input versions and a caller-supplied timezone-aware execution timestamp. A run is validated against both the descriptor and the resolution that authorized it. Undeclared outputs, output version/category mismatches, input-provenance mismatches and outputs from an unresolved component are rejected.
+Every run records the city deployment, exact component id/version, exact capability-contract input versions and a caller-supplied timezone-aware execution timestamp. A run is validated against both the descriptor and the successful resolution that authorized it. An unresolved component does not produce a run envelope; its reason remains in `ComponentResolution`. `RunStatus.UNAVAILABLE` therefore means execution became unavailable only after capability resolution succeeded. Undeclared outputs, output version/category mismatches and input-provenance mismatches are rejected.
 
 `DerivedOutput` deliberately identifies the declared output contract rather than inventing one universal payload schema. Domain-specific result values belong to the corresponding versioned output contract; provider payloads must not leak into this core envelope.
 

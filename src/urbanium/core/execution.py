@@ -115,6 +115,9 @@ def validate_component_run(
     ):
         raise ValueError("resolution component identity does not match descriptor")
 
+    if resolution.unavailable:
+        raise ValueError("unresolved component cannot produce a run result")
+
     provenance = result.provenance
     if (
         provenance.component_id != descriptor.id
@@ -129,13 +132,6 @@ def validate_component_run(
     actual_inputs = sorted((item.capability_id, item.version) for item in provenance.inputs)
     if actual_inputs != expected_inputs:
         raise ValueError("run provenance capability inputs do not match descriptor requirements")
-
-    if resolution.unavailable:
-        if result.outputs:
-            raise ValueError("unresolved component cannot produce outputs")
-        if result.status is not RunStatus.UNAVAILABLE:
-            raise ValueError("unresolved component must report an unavailable run")
-        return
 
     declared_outputs = {output.id: output for output in descriptor.outputs}
     for output in result.outputs:
