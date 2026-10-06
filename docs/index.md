@@ -11,6 +11,7 @@ Urbanium documentation evolves together with implementation. Planned capabilitie
 - [Entities and relationships](concepts/entities-and-relationships.md)
 - [Bounded RDF projection](ontology/rdf-projection.md)
 - [DWD CDC air-temperature adapter](providers/dwd-air-temperature.md)
+- [VBB GTFS-Realtime operational alert adapter](providers/vbb-gtfs-realtime.md)
 - [Berlin and Mainz reference deployments](cities/reference-deployments.md)
 - [Add a city](cities/add-a-city.md)
 - [Reference architecture analysis](research/reference-architectures.md)
