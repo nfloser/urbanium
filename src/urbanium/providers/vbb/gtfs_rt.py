@@ -4,7 +4,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, cast
 from urllib.request import urlopen
 
 from google.protobuf.message import DecodeError
@@ -110,6 +110,11 @@ class VbbGtfsRtProvider:
             return _unavailable(ProviderErrorCode.TIMEOUT, "VBB GTFS-RT request timed out")
         except OSError:
             return _unavailable(ProviderErrorCode.UPSTREAM, "VBB GTFS-RT request failed")
+        except ValueError:
+            return _unavailable(
+                ProviderErrorCode.INVALID_RESPONSE,
+                "VBB GTFS-RT feed exceeds size limit",
+            )
 
         if len(payload) > MAX_FEED_BYTES:
             return _unavailable(
@@ -165,12 +170,11 @@ class VbbGtfsRtProvider:
 
     def _snapshot_time(
         self,
-        message: object,
+        message: Any,
         received_at: datetime,
     ) -> tuple[datetime, Freshness, str, ProviderError | None]:
-        header = cast(object, getattr(message, "header"))
-        has_field = cast(Callable[[str], bool], getattr(header, "HasField"))
-        if not has_field("timestamp"):
+        header = message.header
+        if not header.HasField("timestamp"):
             return (
                 received_at,
                 Freshness.UNKNOWN,
@@ -181,7 +185,7 @@ class VbbGtfsRtProvider:
                 ),
             )
 
-        timestamp = cast(int, getattr(header, "timestamp"))
+        timestamp = cast(int, header.timestamp)
         observed_at = datetime.fromtimestamp(timestamp, UTC)
         if observed_at > received_at.astimezone(UTC):
             raise ValueError("GTFS-Realtime timestamp is in the future")
