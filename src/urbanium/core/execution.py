@@ -124,8 +124,7 @@ def validate_component_run(
         raise ValueError("run provenance component identity or city does not match resolution")
 
     expected_inputs = sorted(
-        (requirement.capability_id, requirement.version)
-        for requirement in descriptor.inputs
+        (requirement.capability_id, requirement.version) for requirement in descriptor.inputs
     )
     actual_inputs = sorted((item.capability_id, item.version) for item in provenance.inputs)
     if actual_inputs != expected_inputs:

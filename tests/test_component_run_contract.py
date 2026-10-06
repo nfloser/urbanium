@@ -182,11 +182,7 @@ def test_component_and_input_provenance_must_match_the_resolved_descriptor() -> 
         validate_component_run(descriptor(), resolution(), result)
 
     wrong_inputs = provenance().model_copy(
-        update={
-            "inputs": (
-                CapabilityInputProvenance(capability_id="weather", version="2"),
-            )
-        }
+        update={"inputs": (CapabilityInputProvenance(capability_id="weather", version="2"),)}
     )
     result = ComponentRunResult(
         status=RunStatus.AVAILABLE,
