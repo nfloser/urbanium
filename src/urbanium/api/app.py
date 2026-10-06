@@ -17,7 +17,12 @@ from urbanium.api.contracts import (
     ObservationReadResponse,
     SourcesResponse,
 )
-from urbanium.core.city import CapabilitySupport, CityDefinition, SourceDefinition
+from urbanium.core.city import (
+    CapabilityDefinition,
+    CapabilitySupport,
+    CityDefinition,
+    SourceDefinition,
+)
 from urbanium.core.provider import (
     Availability,
     ObservationProvider,
@@ -189,7 +194,11 @@ def _city(registry: CityRegistry, city_id: str) -> CityDefinition:
         _fail(404, "city_not_found", f"unknown city '{city_id}'")
 
 
-def _capability(registry: CityRegistry, city_id: str, capability_id: str):
+def _capability(
+    registry: CityRegistry,
+    city_id: str,
+    capability_id: str,
+) -> CapabilityDefinition:
     try:
         return registry.capability(city_id, capability_id)
     except KeyError:
