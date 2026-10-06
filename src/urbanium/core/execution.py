@@ -1,5 +1,6 @@
 """Contracts for deterministic component run outcomes and provenance."""
 
+from collections.abc import Iterable
 from datetime import datetime
 from enum import StrEnum
 from typing import Self
@@ -148,12 +149,10 @@ def validate_component_run(
             raise ValueError(f"run output '{output.id}' state category does not match descriptor")
 
 
-def _duplicates(values: object) -> list[str]:
+def _duplicates(values: Iterable[str]) -> list[str]:
     seen: set[str] = set()
     duplicates: set[str] = set()
     for value in values:
-        if not isinstance(value, str):
-            raise TypeError("duplicate detection expects strings")
         if value in seen:
             duplicates.add(value)
         seen.add(value)
