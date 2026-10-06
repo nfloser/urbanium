@@ -10,14 +10,36 @@ from urbanium.core.city import (
     SourceDefinition,
     SourceStatus,
 )
+from urbanium.core.component import (
+    CapabilityRequirement,
+    ComponentDescriptor,
+    ComponentKind,
+    ComponentOutput,
+    ComponentRegistry,
+    ComponentResolution,
+    DerivedStateCategory,
+    ResolutionReasonCode,
+    UnavailableCapability,
+    resolve_component,
+)
 
 __all__ = [
     "CapabilityDefinition",
+    "CapabilityRequirement",
     "CapabilitySupport",
     "CityDefinition",
+    "ComponentDescriptor",
+    "ComponentKind",
+    "ComponentOutput",
+    "ComponentRegistry",
+    "ComponentResolution",
+    "DerivedStateCategory",
     "LicenseMetadata",
     "RedistributionStatus",
+    "ResolutionReasonCode",
     "SourceAuthority",
     "SourceDefinition",
     "SourceStatus",
+    "UnavailableCapability",
+    "resolve_component",
 ]
