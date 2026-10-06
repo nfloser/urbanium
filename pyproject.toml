@@ -16,6 +16,9 @@ dependencies = [
   "uvicorn>=0.54,<1",
 ]
 
+[project.scripts]
+urbanium-api = "urbanium.api.__main__:main"
+
 [project.optional-dependencies]
 dev = [
   "httpx>=0.28.1,<1",
