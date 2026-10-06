@@ -64,9 +64,7 @@ class ComponentDescriptor(BaseModel):
     def validate_unique_contracts(self) -> Self:
         duplicate_inputs = _duplicates(item.capability_id for item in self.inputs)
         if duplicate_inputs:
-            raise ValueError(
-                "duplicate capability requirements: " + ", ".join(duplicate_inputs)
-            )
+            raise ValueError("duplicate capability requirements: " + ", ".join(duplicate_inputs))
 
         duplicate_outputs = _duplicates(item.id for item in self.outputs)
         if duplicate_outputs:
@@ -108,9 +106,7 @@ class ComponentRegistry:
         try:
             return self._descriptors[key]
         except KeyError as exc:
-            raise KeyError(
-                f"unknown component '{kind.value}:{component_id}:{version}'"
-            ) from exc
+            raise KeyError(f"unknown component '{kind.value}:{component_id}:{version}'") from exc
 
 
 class ResolutionReasonCode(StrEnum):
