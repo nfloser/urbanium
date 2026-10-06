@@ -1,0 +1,5 @@
+schema_version: "1"
+city_id: berlin
+source_id: vbb_gtfs_rt
+endpoint: https://production.gtfsrt.vbb.de
+freshness_seconds: 300

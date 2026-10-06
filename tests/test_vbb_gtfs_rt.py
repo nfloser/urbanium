@@ -3,8 +3,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from google.transit import gtfs_realtime_pb2
-from google.protobuf.message import DecodeError
-
 from tests.contracts.provider import ProviderContractCases, assert_provider_contract
 from urbanium.core.provider import Availability, Freshness, ProviderErrorCode
 from urbanium.providers.vbb.gtfs_rt import (
