@@ -2,6 +2,12 @@
 
 Urbanium uses capabilities to describe what a city deployment can provide without assuming that every city exposes the same data.
 
+## Capability contract versions
+
+Every capability declaration carries a canonical contract version. Component descriptors request an exact version; resolution never assumes that a different version is compatible. The current registry schema defaults existing declarations to contract version `1`.
+
+The version belongs to the Urbanium capability contract, not to an upstream provider API or dataset release. Provider and adapter versions remain separate metadata.
+
 ## Static support is not runtime health
 
 The city registry describes **deployment support**, not whether an upstream provider is healthy at this instant.

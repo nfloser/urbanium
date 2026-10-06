@@ -6,6 +6,7 @@ Urbanium documentation evolves together with implementation. Planned capabilitie
 
 - [Architecture overview](architecture/overview.md)
 - [Capabilities and deployment support](concepts/capabilities.md)
+- [Deterministic components and capability resolution](concepts/components.md)
 - [Entities and relationships](concepts/entities-and-relationships.md)
 - [Bounded RDF projection](ontology/rdf-projection.md)
 - [DWD CDC air-temperature adapter](providers/dwd-air-temperature.md)
