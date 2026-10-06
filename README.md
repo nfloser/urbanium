@@ -33,9 +33,11 @@ The architecture/engineering baseline is established. The first executable verti
 
 This registry describes static deployment support. The first [provider contract](docs/concepts/provider-contracts.md) defines numeric observation and read-outcome semantics, including a reusable adapter contract suite. A shared [DWD CDC adapter](docs/providers/dwd-air-temperature.md) normalizes current air-temperature observations for Berlin and Mainz onto typed [entity identities](docs/concepts/entities-and-relationships.md). Evidence-backed relationships have a bounded [RDF/SHACL projection](docs/ontology/rdf-projection.md) while canonical execution remains independent of RDF storage.
 
-The reusable-intelligence layer now has a complete minimal [deterministic component framework](docs/concepts/components.md): exact-version capability resolution, explicit runtime outcomes, JSON-safe contract payloads, framework-owned provenance and guarded component invocation all work without city-specific or LLM dependencies. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
+The reusable-intelligence layer now has a complete minimal [deterministic component framework](docs/concepts/components.md): exact-version capability resolution, explicit runtime outcomes, JSON-safe contract payloads, framework-owned provenance and guarded component invocation all work without city-specific or LLM dependencies.
 
-A persistent last-known-good state store is not implemented yet.
+The [v1 machine API](docs/api/v1.md) exposes city/capability/source discovery and canonical observation reads through application-independent /api/v1 contracts. Provider degradation remains explicit in the response body, unavailable upstream reads use HTTP 503 without losing the typed provider result, and the generated OpenAPI surface is covered by contract tests.
+
+A persistent last-known-good state store is not implemented yet. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
 
 ## Development
 
