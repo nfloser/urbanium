@@ -33,7 +33,7 @@ The architecture/engineering baseline is established. The first executable verti
 
 This registry describes static deployment support. The first [provider contract](docs/concepts/provider-contracts.md) defines numeric observation and read-outcome semantics, including a reusable adapter contract suite. A shared [DWD CDC adapter](docs/providers/dwd-air-temperature.md) normalizes current air-temperature observations for Berlin and Mainz onto typed [entity identities](docs/concepts/entities-and-relationships.md). Evidence-backed relationships have a bounded [RDF/SHACL projection](docs/ontology/rdf-projection.md) while canonical execution remains independent of RDF storage.
 
-The reusable-intelligence layer now has [deterministic component contracts](docs/concepts/components.md): exact-version capability resolution, component registry semantics, explicit run states and reconstructable execution provenance are defined without city-specific or LLM dependencies. Real component invocation and orchestration remain open work under the agent/model framework.
+The reusable-intelligence layer now has a complete minimal [deterministic component framework](docs/concepts/components.md): exact-version capability resolution, explicit runtime outcomes, JSON-safe contract payloads, framework-owned provenance and guarded component invocation all work without city-specific or LLM dependencies. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
 
 A persistent last-known-good state store is not implemented yet.
 

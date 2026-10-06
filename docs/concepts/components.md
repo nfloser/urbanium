@@ -1,6 +1,6 @@
 # Deterministic components and capability resolution
 
-Urbanium components are reusable deterministic agents or models that declare what they need before any execution is attempted. The descriptor layer is city-independent: it depends on canonical capability contracts, not Berlin, Mainz or provider APIs.
+Urbanium components are reusable deterministic agents or models that declare what they need before any execution is attempted. The component layer is city-independent: it depends on canonical capability contracts, not Berlin, Mainz or provider APIs.
 
 ## Descriptor contract
 
@@ -34,20 +34,37 @@ Failures are explicit and machine-readable:
 
 This makes portability observable rather than fabricated. A component that requires `weather@1` and `realtime_transport@1` resolves for Berlin in the current reference deployments but not for Mainz, where realtime transport remains a candidate integration.
 
+## Deterministic invocation
+
+`execute_component` is the minimal execution boundary. It resolves the component against the selected city before invoking implementation code. If resolution is unavailable, the implementation is not called and the execution attempt contains only the typed `ComponentResolution`.
+
+For a resolved component, invocation then:
+
+1. rejects duplicate capability inputs;
+2. requires the exact capability ids and contract versions declared by the descriptor;
+3. orders inputs deterministically before handing them to the implementation;
+4. invokes the implementation once;
+5. constructs provenance from the city, descriptor, validated input contracts and caller-supplied execution time;
+6. validates emitted outputs against the descriptor before returning the run.
+
+Unexpected implementation exceptions propagate rather than being converted into apparently healthy or degraded data. A component must explicitly return a degraded or unavailable outcome when those are legitimate domain/runtime states.
+
+The implementation protocol is intentionally small: a descriptor plus `run(inputs)`. There is no discovery mechanism or implicit global registry of executable code.
+
 ## Run outcome and provenance contracts
 
-After capability resolution, a deterministic run can report one of three states:
+After successful capability resolution, a deterministic run can report one of three states:
 
 - `available`: at least one declared output was produced and no problem is present;
 - `degraded`: declared output is present together with one or more explicit problems;
-- `unavailable`: no output is present and at least one explicit problem explains the failure.
+- `unavailable`: no output is present and at least one explicit problem explains the runtime failure.
 
-Every run records the city deployment, exact component id/version, exact capability-contract input versions and a caller-supplied timezone-aware execution timestamp. A run is validated against both the descriptor and the successful resolution that authorized it. An unresolved component does not produce a run envelope; its reason remains in `ComponentResolution`. `RunStatus.UNAVAILABLE` therefore means execution became unavailable only after capability resolution succeeded. Undeclared outputs, output version/category mismatches and input-provenance mismatches are rejected.
+Every run records the city deployment, exact component id/version, exact capability-contract input versions and a caller-supplied timezone-aware execution timestamp. An unresolved component does not produce a run envelope; its reason remains in `ComponentResolution`. `RunStatus.UNAVAILABLE` therefore means execution became unavailable only after capability resolution succeeded.
 
-`DerivedOutput` deliberately identifies the declared output contract rather than inventing one universal payload schema. Domain-specific result values belong to the corresponding versioned output contract; provider payloads must not leak into this core envelope.
+Capability inputs and derived outputs carry JSON-safe payloads. The generic envelope does not define one universal domain schema: payload meaning remains governed by the corresponding versioned capability or output contract. Provider-specific raw payloads must still be normalized before entering this boundary.
 
 ## Boundary of the current implementation
 
-The core now defines descriptors, city capability resolution, run-state invariants and reconstructable run provenance. It still does **not** invoke component code.
+The generic agent/model framework now covers deterministic descriptors, registry lookup, city capability resolution, exact input validation, invocation, explicit runtime outcomes and reconstructable provenance.
 
-There is no scheduler, plugin loader, workflow engine, LLM planner or city-specific dispatch in this layer. The next execution slice must bind deterministic component implementations to these contracts without weakening the resolution and provenance guarantees.
+It still does **not** provide a scheduler, plugin discovery/loader, workflow engine, persistence layer, LLM planner or city-specific dispatch. Those concerns should be introduced only by separate evidence-backed issues rather than being hidden in the core execution path.
