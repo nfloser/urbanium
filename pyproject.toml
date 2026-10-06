@@ -9,6 +9,7 @@ description = "City-agnostic, agent-extensible urban digital-twin and intelligen
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.142,<1",
+  "gtfs-realtime-bindings>=3,<4",
   "pydantic>=2.9,<3",
   "PyYAML>=6,<7",
   "pyshacl>=0.40,<0.41",
