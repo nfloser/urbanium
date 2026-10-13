@@ -1,16 +1,16 @@
 # Urbanium
 
-Urbanium is a city-agnostic, agent-extensible infrastructure for federated urban digital twins and cross-domain urban intelligence.
+Urbanium provides shared infrastructure for urban digital twins across different cities. City adapters and agents connect data sources without tying the platform core to any one deployment.
 
-The project is designed as long-lived platform infrastructure, not as a dashboard application. Applications such as dashboards, command-line tools, research notebooks and municipal integrations are clients of stable platform contracts.
+Dashboards, command-line tools, research notebooks and municipal integrations are clients of the platform's stable contracts. The core runs independently of these applications.
 
 Berlin and Mainz are the first reference deployments used to prove portability. Neither city is allowed to define the platform core.
 
 ## Goals
 
-Urbanium aims to connect heterogeneous urban assets, sensors, observations, datasets, models, simulations and agents through explicit, versioned interfaces while preserving provenance, uncertainty, quality and the distinction between reference, live, historical, forecast, scenario and simulated state.
+Urbanium connects urban assets, sensors, datasets, models and agents through versioned interfaces. Data retains its provenance, uncertainty and quality metadata; reference, live, historical, forecast, scenario and simulated states remain distinct.
 
-The long-term differentiator is cross-domain reasoning: understanding how otherwise separate urban systems relate and what decisions become possible because those relationships are represented explicitly.
+The long-term goal is to connect information across urban domains so relationships between systems can support analysis and decisions.
 
 ## Architecture principles
 
