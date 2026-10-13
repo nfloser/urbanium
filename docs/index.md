@@ -1,6 +1,6 @@
 # Urbanium documentation
 
-Urbanium documentation evolves together with implementation. Planned capabilities are not documented as implemented behavior.
+The documentation distinguishes implemented platform features from planned work.
 
 ## Start here
 
@@ -18,4 +18,4 @@ Urbanium documentation evolves together with implementation. Planned capabilitie
 - [Development roadmap](development/roadmap.md)
 - [Architecture decisions](adr/)
 
-Future documentation will grow by domain, provider, agent/model, ontology/semantics, operations and reproducible research as executable functionality is introduced.
+Further guides will cover domains, providers, agents, models, semantics, operations and reproducible research as working implementations are added.
