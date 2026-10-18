@@ -8,7 +8,7 @@ from typing import Any, Literal, cast
 from urllib.request import urlopen
 
 from google.protobuf.message import DecodeError
-from google.transit import gtfs_realtime_pb2  # type: ignore[import-untyped]
+from google.transit import gtfs_realtime_pb2
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError
 from yaml import YAMLError, safe_load
 
