@@ -23,10 +23,10 @@ def create_runtime_app(cities_root: Path | None = None) -> FastAPI:
 
     providers: list[ObservationProvider] = []
     for config_path in sorted(root.glob("*/providers/dwd_air_temperature.yaml")):
-        config = load_dwd_air_temperature_config(config_path)
-        providers.append(DwdCdcAirTemperatureProvider(config))
+        dwd_config = load_dwd_air_temperature_config(config_path)
+        providers.append(DwdCdcAirTemperatureProvider(dwd_config))
     for config_path in sorted(root.glob("*/providers/vbb_gtfs_rt.yaml")):
-        config = load_vbb_gtfs_rt_config(config_path)
-        providers.append(VbbGtfsRtProvider(config))
+        vbb_config = load_vbb_gtfs_rt_config(config_path)
+        providers.append(VbbGtfsRtProvider(vbb_config))
 
     return create_app(registry, providers=providers)
