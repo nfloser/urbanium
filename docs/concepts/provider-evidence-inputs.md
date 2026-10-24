@@ -15,9 +15,7 @@ from urbanium.analysis.observation_inputs import observation_input
 
 # city is a validated CityDefinition; provider implements ObservationProvider.
 result = provider.read()
-input_value = observation_input(
-    city, provider.descriptor, result, prepared_at=datetime.now(UTC)
-)
+input_value = observation_input(city, provider.descriptor, result, prepared_at=datetime.now(UTC))
 ```
 
 The helper checks that the provider is bound to a configured capability and
