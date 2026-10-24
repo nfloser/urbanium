@@ -17,7 +17,7 @@ The GitHub issues are the executable roadmap. Dependencies are intentional; date
 
 ## P2: prove cross-domain value
 
-- **#8 First evidence-backed cross-domain demonstrator** — depends on #4, #5 and #7.
+- **#8 First evidence-backed cross-domain demonstrator** — depends on #4, #5 and #7. Provider evidence-to-component input conversion is the first bounded integration step (#29); a validated cross-domain component, reproducible reference inputs and decision value are still outstanding.
 
 ## Planned sequence
 
