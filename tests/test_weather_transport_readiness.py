@@ -255,6 +255,24 @@ def test_forged_city_binding_is_rejected_without_leaking_unvalidated_readings() 
     assert "read" not in weather_result
 
 
+def test_preparation_before_observation_receipt_is_not_reported_as_usable() -> None:
+    weather = evidence("weather")
+    premature = weather.model_copy(
+        update={
+            "payload": {
+                **weather.payload,
+                "prepared_at": OBSERVED.isoformat().replace("+00:00", "Z"),
+            }
+        }
+    )
+    attempt = assess(premature, evidence("realtime_transport"))
+
+    assert attempt.run is not None
+    assert attempt.run.status is RunStatus.DEGRADED
+    assert [problem.code for problem in attempt.run.problems] == ["weather_invalid_evidence"]
+    assert attempt.run.outputs[0].payload["both_sources_usable"] is False
+
+
 def test_mainz_does_not_execute_without_verified_transport_capability() -> None:
     attempt = assess(evidence("weather"), evidence("realtime_transport"), city_id="mainz")
 
