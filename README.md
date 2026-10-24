@@ -37,6 +37,8 @@ Evidence-backed relationships have a bounded [RDF/SHACL projection](docs/ontolog
 
 The [v1 machine API](docs/api/v1.md) exposes city/capability/source discovery and canonical observation reads through application-independent /api/v1 contracts. Provider degradation remains explicit in the response body, unavailable upstream reads use HTTP 503 without losing the typed provider result, and the generated OpenAPI surface is covered by contract tests.
 
+The first [weather/transport source-readiness component](docs/concepts/weather-transport-readiness.md) consumes canonical provider evidence and reports whether the two independent sources are usable for further analysis. It deliberately does not infer weather-related transport disruptions or claim spatial/temporal alignment.
+
 A persistent last-known-good state store is not implemented yet. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
 
 ## Development
