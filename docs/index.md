@@ -7,6 +7,7 @@ The documentation distinguishes implemented platform features from planned work.
 - [Architecture overview](architecture/overview.md)
 - [Capabilities and deployment support](concepts/capabilities.md)
 - [Deterministic components and capability resolution](concepts/components.md)
+- [Provider evidence in component inputs](concepts/provider-evidence-inputs.md)
 - [Versioned machine API](api/v1.md)
 - [Entities and relationships](concepts/entities-and-relationships.md)
 - [Bounded RDF projection](ontology/rdf-projection.md)
