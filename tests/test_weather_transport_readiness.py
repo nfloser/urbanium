@@ -238,9 +238,12 @@ def test_unrelated_quantities_cannot_satisfy_required_measurement() -> None:
 def test_forged_city_binding_is_rejected_without_leaking_unvalidated_readings() -> None:
     weather = evidence("weather")
     forged = weather.model_copy(
-        update={"payload": {**weather.payload, "provider": {
-            **weather.payload["provider"], "city_id": "mainz"
-        }}}
+        update={
+            "payload": {
+                **weather.payload,
+                "provider": {**weather.payload["provider"], "city_id": "mainz"},
+            }
+        }
     )
     attempt = assess(forged, evidence("realtime_transport"))
 
@@ -257,6 +260,4 @@ def test_mainz_does_not_execute_without_verified_transport_capability() -> None:
 
     assert not attempt.resolution.available
     assert attempt.run is None
-    assert [item.capability_id for item in attempt.resolution.unavailable] == [
-        "realtime_transport"
-    ]
+    assert [item.capability_id for item in attempt.resolution.unavailable] == ["realtime_transport"]
