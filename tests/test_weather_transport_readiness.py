@@ -7,6 +7,7 @@ from pathlib import Path
 from urbanium.analysis.observation_inputs import observation_input
 from urbanium.analysis.weather_transport_readiness import assess_weather_transport_readiness
 from urbanium.core.entity import EntityReference
+from urbanium.core.execution import RunStatus
 from urbanium.core.provider import (
     Availability,
     Freshness,
@@ -16,7 +17,6 @@ from urbanium.core.provider import (
     ProviderErrorCode,
     ProviderResult,
 )
-from urbanium.core.execution import RunStatus
 from urbanium.registry import CityRegistry
 
 CITIES = Path(__file__).resolve().parents[1] / "cities"
@@ -135,8 +135,12 @@ def test_fresh_sources_report_independent_evidence_without_causal_claims() -> No
 def test_output_is_stable_when_provider_observations_arrive_in_different_order() -> None:
     first = observation("weather", value="1", entity_id="station_a")
     second = observation("weather", value="2", entity_id="station_b")
-    forward = assess(evidence("weather", observations=(first, second)), evidence("realtime_transport"))
-    backward = assess(evidence("weather", observations=(second, first)), evidence("realtime_transport"))
+    forward = assess(
+        evidence("weather", observations=(first, second)), evidence("realtime_transport")
+    )
+    backward = assess(
+        evidence("weather", observations=(second, first)), evidence("realtime_transport")
+    )
 
     assert forward.run is not None and backward.run is not None
     a = forward.run.outputs[0].payload["weather"]["validated_observations"]
