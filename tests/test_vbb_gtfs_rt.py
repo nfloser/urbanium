@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from google.transit import gtfs_realtime_pb2
@@ -142,6 +142,33 @@ def test_timeout_malformed_and_oversized_feeds_are_explicitly_unavailable() -> N
     assert oversized.availability is Availability.UNAVAILABLE
     assert oversized.error is not None
     assert oversized.error.code is ProviderErrorCode.INVALID_RESPONSE
+
+
+def test_feed_timestamp_created_during_download_uses_actual_receipt_time() -> None:
+    # A feed produced after the request started can still be valid at receipt.
+    download_finished = False
+    header_time = NOW - timedelta(seconds=30)
+
+    def delayed_fetch(url: str, timeout: float) -> bytes:
+        nonlocal download_finished
+        assert url == "https://production.gtfsrt.vbb.de"
+        assert timeout == 10.0
+        download_finished = True
+        return feed(timestamp=int(header_time.timestamp()))
+
+    def receipt_clock() -> datetime:
+        return NOW if download_finished else NOW - timedelta(minutes=2)
+
+    result = VbbGtfsRtProvider(
+        provider().config,
+        fetcher=delayed_fetch,
+        clock=receipt_clock,
+    ).read()
+
+    assert result.availability is Availability.AVAILABLE
+    assert result.freshness is Freshness.FRESH
+    assert result.observations[0].observed_at == header_time
+    assert result.observations[0].received_at == NOW
 
 
 def test_future_feed_timestamp_is_rejected_instead_of_rewriting_provenance() -> None:
