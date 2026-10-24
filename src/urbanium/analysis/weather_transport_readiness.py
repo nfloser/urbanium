@@ -114,6 +114,8 @@ class WeatherTransportReadiness:
             result = ProviderResult.model_validate(raw["read"])
             validate_provider_descriptor(self._city, provider)
             validate_provider_result(provider, result)
+            if any(observation.received_at > prepared_time for observation in result.observations):
+                raise ValueError("evidence was prepared before its observations were received")
             if provider.capability_id != item.capability_id or item.version != "1":
                 raise ValueError("evidence capability contract mismatch")
         except (KeyError, TypeError, ValueError):
