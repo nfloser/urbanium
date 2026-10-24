@@ -2,7 +2,7 @@
 
 Urbanium provides shared infrastructure for urban digital twins across different cities. City adapters and agents connect data sources without tying the platform core to any one deployment.
 
-Dashboards, command-line tools, research notebooks and municipal integrations are clients of the platform's stable contracts. The core runs independently of these applications.
+Urbanium is designed as platform infrastructure, not as a dashboard application. Dashboards, command-line tools, research notebooks and municipal integrations are clients of its stable contracts; the core runs independently of them.
 
 Berlin and Mainz are the first reference deployments used to prove portability. Neither city is allowed to define the platform core.
 
