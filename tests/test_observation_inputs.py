@@ -239,9 +239,7 @@ def test_handoff_compares_preparation_and_receipt_across_timezone_offsets() -> N
     )
     local_preparation = RECEIVED.astimezone(timezone(timedelta(hours=2)))
 
-    prepared = observation_input(
-        city, weather_descriptor(), result, prepared_at=local_preparation
-    )
+    prepared = observation_input(city, weather_descriptor(), result, prepared_at=local_preparation)
 
     assert prepared.payload["prepared_at"] == RECEIVED.isoformat().replace("+00:00", "Z")
 
