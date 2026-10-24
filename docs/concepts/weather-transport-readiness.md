@@ -60,13 +60,18 @@ from urbanium.analysis.observation_inputs import observation_input
 from urbanium.analysis.weather_transport_readiness import assess_weather_transport_readiness
 from urbanium.core.entity import EntityReference
 from urbanium.core.provider import (
-    Availability, Freshness, Observation, ProviderDescriptor, ProviderResult,
+    Availability,
+    Freshness,
+    Observation,
+    ProviderDescriptor,
+    ProviderResult,
 )
 from urbanium.registry import CityRegistry
 
 city = CityRegistry.from_directory(Path("cities")).city("berlin")
 observed_at = datetime(2026, 10, 24, 9, 10, tzinfo=UTC)
 received_at = datetime(2026, 10, 24, 9, 12, tzinfo=UTC)
+
 
 def source_input(capability: str, source: str, quantity: str, unit: str, value: str):
     descriptor = ProviderDescriptor(
@@ -77,25 +82,35 @@ def source_input(capability: str, source: str, quantity: str, unit: str, value: 
         freshness=Freshness.FRESH,
         observations=(
             Observation(
-                city_id=city.id, source_id=source, capability_id=capability,
+                city_id=city.id,
+                source_id=source,
+                capability_id=capability,
                 entity=EntityReference(
                     city_id=city.id,
-                    entity_type="weather_station" if capability == "weather" else "transport_network",
-                    entity_id="synthetic_station" if capability == "weather" else "synthetic_network",
+                    entity_type="weather_station"
+                    if capability == "weather"
+                    else "transport_network",
+                    entity_id="synthetic_station"
+                    if capability == "weather"
+                    else "synthetic_network",
                 ),
-                quantity_id=quantity, value=Decimal(value), unit=unit,
-                observed_at=observed_at, received_at=received_at,
+                quantity_id=quantity,
+                value=Decimal(value),
+                unit=unit,
+                observed_at=observed_at,
+                received_at=received_at,
             ),
         ),
     )
     return observation_input(city, descriptor, result, prepared_at=received_at)
 
+
 weather = source_input("weather", "dwd_open_data", "air_temperature", "Cel", "0.0")
-transport = source_input(
-    "realtime_transport", "vbb_gtfs_rt", "active_service_alerts", "1", "0"
-)
+transport = source_input("realtime_transport", "vbb_gtfs_rt", "active_service_alerts", "1", "0")
 attempt = assess_weather_transport_readiness(
-    city, weather=weather, transport=transport,
+    city,
+    weather=weather,
+    transport=transport,
     executed_at=datetime(2026, 10, 24, 9, 15, tzinfo=UTC),
 )
 assert attempt.run is not None
