@@ -1,6 +1,6 @@
 # Urbanium
 
-Urbanium provides shared infrastructure for urban digital twins across different cities. City adapters and agents connect data sources without tying the platform core to any one deployment.
+Urbanium provides shared infrastructure for federated urban digital twins across different cities. City adapters and agents connect data sources without tying the platform core to any one deployment.
 
 Urbanium is designed as platform infrastructure, not as a dashboard application. Dashboards, command-line tools, research notebooks and municipal integrations are clients of its stable contracts; the core runs independently of them.
 
@@ -8,7 +8,7 @@ Berlin and Mainz are the first reference deployments used to prove portability. 
 
 ## Goals
 
-Urbanium connects urban assets, sensors, datasets, models and agents through versioned interfaces. Data retains its provenance, uncertainty and quality metadata; reference, live, historical, forecast, scenario and simulated states remain distinct.
+Urbanium connects urban assets, sensors, observations, datasets, models, simulations and agents through versioned interfaces. Data retains its provenance, uncertainty and quality metadata; reference, live, historical, forecast, scenario and simulated states remain distinct.
 
 The long-term goal is to connect information across urban domains so relationships between systems can support analysis and decisions.
 
