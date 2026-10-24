@@ -9,11 +9,15 @@ boundaries without interpreting a source's domain or changing its health state.
 ## Use
 
 ```python
+from datetime import UTC, datetime
+
 from urbanium.analysis.observation_inputs import observation_input
 
 # city is a validated CityDefinition; provider implements ObservationProvider.
 result = provider.read()
-input_value = observation_input(city, provider.descriptor, result)
+input_value = observation_input(
+    city, provider.descriptor, result, prepared_at=datetime.now(UTC)
+)
 ```
 
 The helper checks that the provider is bound to a configured capability and
@@ -21,7 +25,8 @@ verified source in the selected city, then validates every observation against
 that provider descriptor. The resulting `CapabilityInput.version` comes from
 the city's capability contract, not the adapter's implementation version.
 
-Its JSON-safe payload contains two objects:
+Its JSON-safe payload contains a timezone-aware UTC `prepared_at` timestamp
+(the input preparation time, **not** the upstream observation time) and two objects:
 
 - `provider`: the complete `ProviderDescriptor` (city, source, capability and
   adapter version).
@@ -32,7 +37,9 @@ Its JSON-safe payload contains two objects:
 The payload is an **evidence envelope**, not a new weather or mobility schema.
 It contains no provider-specific wire formats. A degraded read remains degraded
 with its observations and error. An unavailable read has an empty observation
-list and retains its error; no value is synthesized. A numeric zero remains a
+list and retains its error; no value is synthesized. The preparation timestamp
+remains available even when the upstream provider returned no observations.
+A numeric zero remains a
 real observation, not a missing-value marker.
 
 ## Responsibility of the component
