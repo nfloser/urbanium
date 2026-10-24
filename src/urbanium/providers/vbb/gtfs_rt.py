@@ -93,13 +93,6 @@ class VbbGtfsRtProvider:
         return str(self.config.endpoint).rstrip("/")
 
     def read(self) -> ProviderResult:
-        received_at = self._clock()
-        if received_at.tzinfo is None or received_at.utcoffset() is None:
-            return _unavailable(
-                ProviderErrorCode.UNKNOWN,
-                "provider clock is not timezone-aware",
-            )
-
         try:
             payload = self._fetcher(self.url, self._timeout)
         except TimeoutError:
@@ -110,6 +103,15 @@ class VbbGtfsRtProvider:
             return _unavailable(
                 ProviderErrorCode.INVALID_RESPONSE,
                 "VBB GTFS-RT feed exceeds size limit",
+            )
+
+        # The receipt timestamp must follow the network read: a feed generated
+        # while downloading may otherwise appear incorrectly to be in the future.
+        received_at = self._clock()
+        if received_at.tzinfo is None or received_at.utcoffset() is None:
+            return _unavailable(
+                ProviderErrorCode.UNKNOWN,
+                "provider clock is not timezone-aware",
             )
 
         if len(payload) > MAX_FEED_BYTES:
