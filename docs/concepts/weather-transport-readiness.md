@@ -25,8 +25,9 @@ inclusive: equivalent instants with different timezone offsets are accepted.
 Invalid evidence is excluded from validated observations and cannot contribute
 to `both_sources_usable`. These checks establish receipt/preparation/execution
 provenance order only; they do not establish overlapping observation windows
-between weather and transport. It does not import DWD/VBB wire formats. Only observations
-with the required quantity, unit and numeric semantics are marked validated.
+between weather and transport. It does not import DWD/VBB wire formats.
+Only observations with the required quantity, unit and numeric semantics are
+marked validated.
 Zero temperature and zero active alerts are both legitimate readings.
 
 The declared output is `source_readiness@1`, category `derived`. Its payload
