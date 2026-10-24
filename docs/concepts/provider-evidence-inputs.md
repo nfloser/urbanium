@@ -32,6 +32,14 @@ Its JSON-safe payload contains a timezone-aware UTC `prepared_at` timestamp
   observations, and typed error). Observations retain entity identity, quantity,
   decimal value as a string, unit, observed/received timestamps and quality.
 
+Preparation must not precede the `received_at` time of **any** observation in
+that read. The handoff compares timezone-aware instants (so equivalent UTC and
+local-offset timestamps are accepted) and rejects impossible chronology before
+any component consumes the input. An unavailable read contains no observations,
+so its preparation timestamp remains valid independently of source receipt.
+This guard is not a cross-source temporal-alignment check: it says nothing about
+whether weather and transport measurements cover the same interval.
+
 The payload is an **evidence envelope**, not a new weather or mobility schema.
 It contains no provider-specific wire formats. A degraded read remains degraded
 with its observations and error. An unavailable read has an empty observation

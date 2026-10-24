@@ -1,6 +1,6 @@
 """The provider-to-component handoff must preserve evidence, not just numeric values."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -208,6 +208,40 @@ def test_preparation_time_must_be_timezone_aware() -> None:
             result,
             prepared_at=datetime(2026, 10, 24, 9, 12),
         )
+
+
+def test_handoff_rejects_an_observation_received_after_preparation() -> None:
+    city = CityRegistry.from_directory(CITIES).city("berlin")
+    later = weather_observation().model_copy(
+        update={
+            "entity": EntityReference(
+                city_id="berlin", entity_type="weather_station", entity_id="berlin_tegel"
+            ),
+            "received_at": RECEIVED + timedelta(seconds=1),
+        }
+    )
+    result = ProviderResult(
+        availability=Availability.AVAILABLE,
+        freshness=Freshness.FRESH,
+        observations=(weather_observation(), later),
+    )
+
+    with pytest.raises(ValueError, match="prepared_at.*received"):
+        observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED)
+
+
+def test_handoff_compares_preparation_and_receipt_across_timezone_offsets() -> None:
+    city = CityRegistry.from_directory(CITIES).city("berlin")
+    result = ProviderResult(
+        availability=Availability.AVAILABLE,
+        freshness=Freshness.FRESH,
+        observations=(weather_observation(),),
+    )
+    local_preparation = RECEIVED.astimezone(timezone(timedelta(hours=2)))
+
+    prepared = observation_input(city, weather_descriptor(), result, prepared_at=local_preparation)
+
+    assert prepared.payload["prepared_at"] == RECEIVED.isoformat().replace("+00:00", "Z")
 
 
 def test_same_handoff_accepts_transport_evidence_without_weather_assumptions() -> None:

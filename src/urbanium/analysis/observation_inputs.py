@@ -28,6 +28,8 @@ def observation_input(
     validate_provider_result(descriptor, result)
     if prepared_at.tzinfo is None or prepared_at.utcoffset() is None:
         raise ValueError("prepared_at must be timezone-aware")
+    if any(observation.received_at > prepared_at for observation in result.observations):
+        raise ValueError("prepared_at must not precede observation received_at")
 
     version = next(
         capability.version
