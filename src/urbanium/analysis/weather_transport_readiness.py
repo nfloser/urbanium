@@ -71,9 +71,7 @@ class WeatherTransportReadiness:
 
     def run(self, inputs: tuple[CapabilityInput, ...]) -> ComponentExecutionOutcome:
         by_capability = {item.capability_id: item for item in inputs}
-        weather = self._inspect(
-            by_capability["weather"], quantity="air_temperature", unit="Cel"
-        )
+        weather = self._inspect(by_capability["weather"], quantity="air_temperature", unit="Cel")
         transport = self._inspect(
             by_capability["realtime_transport"], quantity="active_service_alerts", unit="1"
         )
