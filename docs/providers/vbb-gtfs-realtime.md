@@ -34,7 +34,7 @@ When the feed omits that optional timestamp, the alert count is still usable but
 - reports the provider result as `degraded`;
 - reports freshness as `unknown`.
 
-A feed timestamp later than the receipt time is rejected rather than silently rewritten.
+The receipt timestamp is captured after the feed has been downloaded, not when the request begins. A feed timestamp later than that actual receipt time is rejected rather than silently rewritten. This avoids falsely rejecting a feed created while the HTTP request was in progress.
 
 ## Failure behavior
 
