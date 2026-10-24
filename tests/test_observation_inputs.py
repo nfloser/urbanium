@@ -95,7 +95,8 @@ def test_degraded_read_keeps_observations_and_typed_error() -> None:
         ),
     )
 
-    read = observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED).payload["read"]
+    prepared = observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED)
+    read = prepared.payload["read"]
 
     assert read["availability"] == "degraded"
     assert read["freshness"] == "unknown"
@@ -114,7 +115,8 @@ def test_unavailable_read_is_not_turned_into_synthetic_observations() -> None:
         error=ProviderError(code=ProviderErrorCode.TIMEOUT, message="provider timed out"),
     )
 
-    read = observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED).payload["read"]
+    prepared = observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED)
+    read = prepared.payload["read"]
 
     assert read["availability"] == "unavailable"
     assert read["observations"] == []
@@ -139,7 +141,8 @@ def test_version_is_taken_from_city_capability_contract() -> None:
         observations=(weather_observation(),),
     )
 
-    assert observation_input(changed, weather_descriptor(), result, prepared_at=RECEIVED).version == "2"
+    prepared = observation_input(changed, weather_descriptor(), result, prepared_at=RECEIVED)
+    assert prepared.version == "2"
 
 
 @pytest.mark.parametrize(
