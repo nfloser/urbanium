@@ -61,10 +61,11 @@ def test_available_read_preserves_exact_observation_evidence_and_contract_versio
         observations=(weather_observation(),),
     )
 
-    capability_input = observation_input(city, weather_descriptor(), result)
+    capability_input = observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED)
 
     assert capability_input.capability_id == "weather"
     assert capability_input.version == "1"
+    assert capability_input.payload["prepared_at"] == RECEIVED.isoformat().replace("+00:00", "Z")
     assert capability_input.payload["provider"] == weather_descriptor().model_dump(mode="json")
     read = capability_input.payload["read"]
     assert read["availability"] == "available"
@@ -94,7 +95,7 @@ def test_degraded_read_keeps_observations_and_typed_error() -> None:
         ),
     )
 
-    read = observation_input(city, weather_descriptor(), result).payload["read"]
+    read = observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED).payload["read"]
 
     assert read["availability"] == "degraded"
     assert read["freshness"] == "unknown"
@@ -113,7 +114,7 @@ def test_unavailable_read_is_not_turned_into_synthetic_observations() -> None:
         error=ProviderError(code=ProviderErrorCode.TIMEOUT, message="provider timed out"),
     )
 
-    read = observation_input(city, weather_descriptor(), result).payload["read"]
+    read = observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED).payload["read"]
 
     assert read["availability"] == "unavailable"
     assert read["observations"] == []
@@ -138,7 +139,7 @@ def test_version_is_taken_from_city_capability_contract() -> None:
         observations=(weather_observation(),),
     )
 
-    assert observation_input(changed, weather_descriptor(), result).version == "2"
+    assert observation_input(changed, weather_descriptor(), result, prepared_at=RECEIVED).version == "2"
 
 
 @pytest.mark.parametrize(
@@ -173,7 +174,7 @@ def test_unverified_or_incorrect_bindings_are_rejected(descriptor: ProviderDescr
     )
 
     with pytest.raises(ValueError, match="provider"):
-        observation_input(city, descriptor, result)
+        observation_input(city, descriptor, result, prepared_at=RECEIVED)
 
 
 def test_observations_from_another_source_are_rejected() -> None:
@@ -186,4 +187,58 @@ def test_observations_from_another_source_are_rejected() -> None:
     )
 
     with pytest.raises(ValueError, match="observation does not match provider descriptor"):
-        observation_input(city, weather_descriptor(), result)
+        observation_input(city, weather_descriptor(), result, prepared_at=RECEIVED)
+
+
+def test_preparation_time_must_be_timezone_aware() -> None:
+    city = CityRegistry.from_directory(CITIES).city("berlin")
+    result = ProviderResult(
+        availability=Availability.UNAVAILABLE,
+        freshness=Freshness.UNKNOWN,
+        error=ProviderError(code=ProviderErrorCode.TIMEOUT, message="provider timed out"),
+    )
+
+    with pytest.raises(ValueError, match="prepared_at must be timezone-aware"):
+        observation_input(
+            city,
+            weather_descriptor(),
+            result,
+            prepared_at=datetime(2026, 10, 24, 9, 12),
+        )
+
+
+def test_same_handoff_accepts_transport_evidence_without_weather_assumptions() -> None:
+    city = CityRegistry.from_directory(CITIES).city("berlin")
+    descriptor = ProviderDescriptor(
+        city_id="berlin",
+        source_id="vbb_gtfs_rt",
+        capability_id="realtime_transport",
+        adapter_version="1.0.0",
+    )
+    result = ProviderResult(
+        availability=Availability.AVAILABLE,
+        freshness=Freshness.FRESH,
+        observations=(
+            Observation(
+                city_id="berlin",
+                source_id="vbb_gtfs_rt",
+                capability_id="realtime_transport",
+                entity=EntityReference(
+                    city_id="berlin",
+                    entity_type="transport_network",
+                    entity_id="vbb_network",
+                ),
+                quantity_id="active_service_alerts",
+                value=Decimal(0),
+                unit="1",
+                observed_at=OBSERVED,
+                received_at=RECEIVED,
+            ),
+        ),
+    )
+
+    prepared = observation_input(city, descriptor, result, prepared_at=RECEIVED)
+
+    assert prepared.capability_id == "realtime_transport"
+    assert prepared.version == "1"
+    assert prepared.payload["read"]["observations"][0]["value"] == "0"
