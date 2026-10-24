@@ -273,7 +273,6 @@ def test_preparation_before_observation_receipt_is_not_reported_as_usable() -> N
     assert attempt.run.outputs[0].payload["both_sources_usable"] is False
 
 
-
 def test_evidence_prepared_after_execution_is_rejected_without_echoing_readings() -> None:
     weather = evidence("weather")
     future = weather.model_copy(
