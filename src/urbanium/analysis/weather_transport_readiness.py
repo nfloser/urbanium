@@ -62,8 +62,9 @@ class _Evidence:
 class WeatherTransportReadiness:
     """Assess source readiness without claiming temporal, spatial or causal linkage."""
 
-    def __init__(self, city: CityDefinition) -> None:
+    def __init__(self, city: CityDefinition, *, executed_at: datetime) -> None:
         self._city = city
+        self._executed_at = executed_at
 
     @property
     def descriptor(self) -> ComponentDescriptor:
@@ -109,6 +110,8 @@ class WeatherTransportReadiness:
             prepared_time = datetime.fromisoformat(prepared_at.replace("Z", "+00:00"))
             if prepared_time.tzinfo is None or prepared_time.utcoffset() is None:
                 raise ValueError("prepared_at must be timezone-aware")
+            if prepared_time > self._executed_at:
+                raise ValueError("evidence was prepared after component execution")
 
             provider = ProviderDescriptor.model_validate(raw["provider"])
             result = ProviderResult.model_validate(raw["read"])
@@ -242,7 +245,7 @@ def assess_weather_transport_readiness(
 
     return execute_component(
         city,
-        WeatherTransportReadiness(city),
+        WeatherTransportReadiness(city, executed_at=executed_at),
         inputs=(weather, transport),
         executed_at=executed_at,
     )

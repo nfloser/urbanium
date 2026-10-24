@@ -273,6 +273,45 @@ def test_preparation_before_observation_receipt_is_not_reported_as_usable() -> N
     assert attempt.run.outputs[0].payload["both_sources_usable"] is False
 
 
+def test_evidence_prepared_after_execution_is_rejected_without_echoing_readings() -> None:
+    weather = evidence("weather")
+    future = weather.model_copy(
+        update={
+            "payload": {
+                **weather.payload,
+                "prepared_at": "2026-10-24T09:16:00Z",
+            }
+        }
+    )
+    attempt = assess(future, evidence("realtime_transport"))
+
+    assert attempt.run is not None
+    assert attempt.run.status is RunStatus.DEGRADED
+    assert [problem.code for problem in attempt.run.problems] == ["weather_invalid_evidence"]
+    snapshot = attempt.run.outputs[0].payload
+    assert snapshot["both_sources_usable"] is False
+    assert snapshot["weather"]["validated_observations"] == []
+    assert "read" not in snapshot["weather"]
+    assert snapshot["realtime_transport"]["usable"] is True
+
+
+def test_evidence_prepared_at_execution_with_different_offset_is_valid() -> None:
+    weather = evidence("weather")
+    on_time = weather.model_copy(
+        update={
+            "payload": {
+                **weather.payload,
+                "prepared_at": "2026-10-24T11:15:00+02:00",
+            }
+        }
+    )
+    attempt = assess(on_time, evidence("realtime_transport"))
+
+    assert attempt.run is not None
+    assert attempt.run.status is RunStatus.AVAILABLE
+    assert attempt.run.outputs[0].payload["both_sources_usable"] is True
+
+
 def test_mainz_does_not_execute_without_verified_transport_capability() -> None:
     attempt = assess(evidence("weather"), evidence("realtime_transport"), city_id="mainz")
 
