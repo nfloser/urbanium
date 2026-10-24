@@ -20,7 +20,12 @@ through `observation_input` (or conform to its documented evidence contract):
 The component checks the source binding against the **selected city**,
 validates the canonical provider result, and rejects a missing or malformed
 evidence envelope, including a preparation time earlier than any observation's
-receipt time. It does not import DWD/VBB wire formats. Only observations
+receipt time **or later than the component's execution time**. The boundary is
+inclusive: equivalent instants with different timezone offsets are accepted.
+Invalid evidence is excluded from validated observations and cannot contribute
+to `both_sources_usable`. These checks establish receipt/preparation/execution
+provenance order only; they do not establish overlapping observation windows
+between weather and transport. It does not import DWD/VBB wire formats. Only observations
 with the required quantity, unit and numeric semantics are marked validated.
 Zero temperature and zero active alerts are both legitimate readings.
 
