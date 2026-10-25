@@ -4,9 +4,15 @@ from datetime import UTC, datetime
 from hashlib import sha256
 
 import pytest
+from google.transit import gtfs_realtime_pb2
 
 from urbanium.core.entity import StateCategory
-from urbanium.providers.vbb.gtfs_rt import VbbAlertStopReference
+from urbanium.core.provider import Availability
+from urbanium.providers.vbb.gtfs_rt import (
+    VbbAlertStopReference,
+    VbbGtfsRtConfig,
+    VbbGtfsRtProvider,
+)
 from urbanium.providers.vbb.static_stops import (
     MAX_STOPS_TXT_BYTES,
     VbbGtfsStaticStopConfig,
@@ -42,8 +48,7 @@ def test_exact_stop_id_yields_sourced_reference_point() -> None:
 
     assert location is not None
     assert location.entity.canonical_id == (
-        "berlin:transport_stop:gtfs_stop_"
-        + sha256(b"de:stop/1").hexdigest()
+        "berlin:transport_stop:gtfs_stop_" + sha256(b"de:stop/1").hexdigest()
     )
     assert location.point.latitude == 52.5001
     assert location.point.longitude == 13.4002
@@ -72,6 +77,35 @@ def test_alert_lookup_preserves_order_duplicates_and_missing_ids() -> None:
     assert matches[2].location == matches[0].location
     assert matches[3].location is None
 
+
+
+def test_realtime_alert_stop_reference_resolves_without_route_inference() -> None:
+    feed = gtfs_realtime_pb2.FeedMessage()
+    feed.header.gtfs_realtime_version = "2.0"
+    feed.header.timestamp = int(NOW.timestamp()) - 60
+    alert = feed.entity.add()
+    alert.id = "synthetic-alert"
+    alert.alert.informed_entity.add().route_id = "route-only"
+    alert.alert.informed_entity.add().stop_id = "de:stop/1"
+
+    provider = VbbGtfsRtProvider(
+        VbbGtfsRtConfig(
+            city_id="berlin",
+            source_id="vbb_gtfs_rt",
+            endpoint="https://production.gtfsrt.vbb.de",
+        ),
+        fetcher=lambda _url, _timeout: feed.SerializeToString(),
+        clock=lambda: NOW,
+    )
+    snapshot = provider.read_snapshot()
+    matches = inventory().resolve_alert_stop_references(snapshot.stop_references)
+
+    assert snapshot.result.availability is Availability.AVAILABLE
+    assert len(matches) == 1
+    assert matches[0].reference.alert_id == "synthetic-alert"
+    assert matches[0].reference.selector_index == 1
+    assert matches[0].location is not None
+    assert matches[0].location.point.latitude == 52.5001
 
 def test_absent_ids_and_stops_without_coordinates_stay_unresolved() -> None:
     source = inventory()
