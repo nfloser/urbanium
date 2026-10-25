@@ -58,12 +58,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from urbanium.providers.vbb.static_stops import (
+    MAX_GTFS_ZIP_BYTES,
     VbbGtfsStaticStopConfig,
     VbbGtfsStaticStopInventory,
 )
 
 # Obtain this file separately under the publisher's applicable terms.
-archive_bytes = Path("licensed-gtfs-release.zip").read_bytes()
+with Path("licensed-gtfs-release.zip").open("rb") as source:
+    archive_bytes = source.read(MAX_GTFS_ZIP_BYTES + 1)
 inventory = VbbGtfsStaticStopInventory.from_gtfs_zip(
     VbbGtfsStaticStopConfig(city_id="berlin", source_id="vbb_gtfs_static"),
     archive_bytes=archive_bytes,
