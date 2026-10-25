@@ -39,6 +39,17 @@ and a deterministically ordered `validated_observations` list. The boolean
 only means **both sources returned fresh, available and contract-valid
 measurements**; it does not establish overlapping time or location.
 
+`closest_observation_gap_seconds` reports the smallest absolute separation
+between any two **validated** `observed_at` instants, one from each source,
+expressed in seconds. It is `null` if either side has no validated measurement.
+The comparison normalizes timezone offsets and does not depend on input order.
+A zero gap means matching timestamp instants, **not** shared geographic
+coverage, matching measurement periods, correlation or causation. A nonzero
+gap is descriptive; Urbanium does not impose a universal time-alignment
+threshold. Stale or degraded but structurally valid observations may still
+contribute to this diagnostic, without becoming `usable` or improving run
+status. No observation is interpolated or synthesized.
+
 The execution states are deliberately conservative:
 
 | State | Meaning |
