@@ -379,3 +379,97 @@ def test_mainz_does_not_execute_without_verified_transport_capability() -> None:
     assert not attempt.resolution.available
     assert attempt.run is None
     assert [item.capability_id for item in attempt.resolution.unavailable] == ["realtime_transport"]
+
+
+def test_closest_pair_identifies_the_observations_behind_the_gap() -> None:
+    weather = (
+        observation("weather", entity_id="station_early").model_copy(
+            update={"observed_at": OBSERVED - timedelta(minutes=5)}
+        ),
+        observation("weather", entity_id="station_near"),
+    )
+    transport = (
+        observation("realtime_transport", entity_id="network_early").model_copy(
+            update={"observed_at": OBSERVED - timedelta(minutes=10)}
+        ),
+        observation("realtime_transport", entity_id="network_near").model_copy(
+            update={"observed_at": OBSERVED - timedelta(seconds=15)}
+        ),
+    )
+    attempt = assess(
+        evidence("weather", observations=tuple(reversed(weather))),
+        evidence("realtime_transport", observations=transport),
+    )
+
+    assert attempt.run is not None
+    snapshot = attempt.run.outputs[0].payload
+    assert snapshot["closest_observation_gap_seconds"] == 15.0
+    assert snapshot["closest_observation_pair"] == {
+        "weather": {
+            "entity": weather[1].entity.model_dump(mode="json"),
+            "observed_at": "2026-10-24T09:10:00Z",
+        },
+        "realtime_transport": {
+            "entity": transport[1].entity.model_dump(mode="json"),
+            "observed_at": "2026-10-24T09:09:45Z",
+        },
+    }
+
+
+def test_closest_pair_breaks_equal_gap_ties_independent_of_order_and_timezone() -> None:
+    weather = (
+        observation("weather", entity_id="station_z"),
+        observation("weather", entity_id="station_a").model_copy(
+            update={"observed_at": OBSERVED.astimezone(timezone(timedelta(hours=2)))}
+        ),
+    )
+    transport = (
+        observation("realtime_transport", entity_id="network_z"),
+        observation("realtime_transport", entity_id="network_a"),
+    )
+    forward = assess(
+        evidence("weather", observations=weather),
+        evidence("realtime_transport", observations=transport),
+    )
+    backward = assess(
+        evidence("weather", observations=tuple(reversed(weather))),
+        evidence("realtime_transport", observations=tuple(reversed(transport))),
+    )
+
+    assert forward.run is not None and backward.run is not None
+    first = forward.run.outputs[0].payload
+    second = backward.run.outputs[0].payload
+    assert first["closest_observation_gap_seconds"] == 0.0
+    assert first["closest_observation_pair"] == second["closest_observation_pair"]
+    pair = first["closest_observation_pair"]
+    assert pair["weather"]["entity"]["entity_id"] == "station_a"
+    assert pair["realtime_transport"]["entity"]["entity_id"] == "network_a"
+    assert pair["weather"]["observed_at"] == "2026-10-24T09:10:00Z"
+    assert pair["realtime_transport"]["observed_at"] == "2026-10-24T09:10:00Z"
+
+
+def test_closest_pair_is_null_without_two_validated_sources() -> None:
+    attempt = assess(
+        evidence("weather"),
+        evidence("realtime_transport", availability=Availability.UNAVAILABLE),
+    )
+
+    assert attempt.run is not None
+    snapshot = attempt.run.outputs[0].payload
+    assert snapshot["closest_observation_gap_seconds"] is None
+    assert snapshot["closest_observation_pair"] is None
+
+
+def test_closest_pair_is_descriptive_even_when_one_source_is_stale() -> None:
+    attempt = assess(
+        evidence("weather", freshness=Freshness.STALE),
+        evidence("realtime_transport"),
+    )
+
+    assert attempt.run is not None
+    assert attempt.run.status is RunStatus.DEGRADED
+    snapshot = attempt.run.outputs[0].payload
+    assert snapshot["both_sources_usable"] is False
+    assert snapshot["closest_observation_pair"]["weather"]["observed_at"] == (
+        "2026-10-24T09:10:00Z"
+    )
