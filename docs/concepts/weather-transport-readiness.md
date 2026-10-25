@@ -43,11 +43,21 @@ measurements**; it does not establish overlapping time or location.
 between any two **validated** `observed_at` instants, one from each source,
 expressed in seconds. It is `null` if either side has no validated measurement.
 The comparison normalizes timezone offsets and does not depend on input order.
+`closest_observation_pair` makes that number auditable. When a pair exists,
+it identifies the contributing `weather` and `realtime_transport`
+observations by their complete canonical entity references and `observed_at`
+instants normalized to UTC (`Z`). It is `null` whenever the gap is `null`.
+For equal-distance candidates, the earliest weather instant, then earliest
+transport instant, then lexicographically ordered entity identities win. Input
+order and equivalent timezone representations do not affect selection. This
+adds diagnostic detail to the existing `source_readiness@1` payload without
+changing its version, availability rules or provenance envelope.
+
 A zero gap means matching timestamp instants, **not** shared geographic
 coverage, matching measurement periods, correlation or causation. A nonzero
 gap is descriptive; Urbanium does not impose a universal time-alignment
 threshold. Stale or degraded but structurally valid observations may still
-contribute to this diagnostic, without becoming `usable` or improving run
+contribute to these diagnostics, without becoming `usable` or improving run
 status. No observation is interpolated or synthesized.
 
 The execution states are deliberately conservative:
