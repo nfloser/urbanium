@@ -120,6 +120,61 @@ def test_partial_invalid_payload_degrades_instead_of_discarding_valid_data() -> 
     assert len(result.observations) == 1
 
 
+def test_receipt_clock_is_sampled_after_the_archive_download() -> None:
+    download_finished = False
+
+    def fetcher(url: str, timeout: float) -> bytes:
+        nonlocal download_finished
+        payload = fetch(archive("air_temperature_now.csv"))(url, timeout)
+        download_finished = True
+        return payload
+
+    def clock() -> datetime:
+        assert download_finished, "receipt time must follow the network download"
+        return NOW
+
+    subject = DwdCdcAirTemperatureProvider(provider().config, fetcher=fetcher, clock=clock)
+
+    result = subject.read()
+
+    assert result.availability is Availability.AVAILABLE
+    assert result.observations[0].received_at == NOW
+
+
+def test_archive_updated_during_download_keeps_its_latest_valid_observation() -> None:
+    payload = (
+        (FIXTURES / "air_temperature_now.csv")
+        .read_bytes()
+        .replace(b"202609291200", b"202609291230")
+    )
+    buffer = BytesIO()
+    with ZipFile(buffer, "w", ZIP_DEFLATED) as target:
+        target.writestr("produkt_zehn_now_tu_20260929_20260929_00433.txt", payload)
+
+    download_finished = False
+    request_started = datetime(2026, 9, 29, 12, 20, tzinfo=UTC)
+    download_completed = datetime(2026, 9, 29, 12, 40, tzinfo=UTC)
+
+    def fetcher(url: str, timeout: float) -> bytes:
+        nonlocal download_finished
+        archive_bytes = fetch(buffer.getvalue())(url, timeout)
+        download_finished = True
+        return archive_bytes
+
+    def clock() -> datetime:
+        return download_completed if download_finished else request_started
+
+    subject = DwdCdcAirTemperatureProvider(provider().config, fetcher=fetcher, clock=clock)
+
+    result = subject.read()
+
+    assert result.availability is Availability.AVAILABLE
+    assert result.freshness is Freshness.FRESH
+    assert len(result.observations) == 1
+    assert result.observations[0].observed_at == datetime(2026, 9, 29, 12, 30, tzinfo=UTC)
+    assert result.observations[0].received_at == download_completed
+
+
 def test_timeout_is_an_explicit_unavailable_result() -> None:
     def timeout(_url: str, _timeout: float) -> bytes:
         raise TimeoutError("fixture timeout")

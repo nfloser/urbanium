@@ -19,6 +19,8 @@ Only the latest valid `TT_10` record is emitted in this slice. It maps to canoni
 
 Missing values (`-999`) are omitted. A mixture of valid and malformed records yields a `degraded` result with the latest valid observation. A malformed archive with no valid records is `unavailable`. Network errors and timeouts become typed provider results rather than platform exceptions. Freshness is assessed separately from availability.
 
+The canonical `received_at` timestamp is sampled **after** the archive download completes and before parsing. This ensures a row published during a slow download is not incorrectly treated as a future observation. The latest row's `observed_at` remains the DWD `MESS_DATUM` instant, and freshness is evaluated against the actual receipt time, not request start. These timestamps describe provenance; they do not establish the row's measurement window or geographic coverage.
+
 ## Tests and operation
 
 Deterministic CI builds in-memory ZIP archives from source-format CSV fixtures and applies the shared provider contract to success, partial-failure and outage cases. It performs no network access.
