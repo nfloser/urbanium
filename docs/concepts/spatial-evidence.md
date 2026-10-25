@@ -78,6 +78,10 @@ not a spatial join. In particular:
 The [DWD station inventory reader](../providers/dwd-station-locations.md)
 now produces these point assertions from the upstream station listing for
 configured stations. It does not establish a measurement footprint or
-validate historical station movement. Suitable transport-event geometry
-and a separate, evidence-backed spatial relationship or coverage assessment
+validate historical station movement. The [offline VBB static stop lookup](../providers/vbb-static-stop-points.md)
+can resolve explicitly named Alert stop IDs to reference points from a
+caller-supplied, compatible `stops.txt`. A matched stop ID does not
+establish that an Alert disrupts that stop, and point proximity does not
+establish overlapping coverage. Suitable transport-event geometry and a
+separate, evidence-backed spatial relationship or coverage assessment
 remain future work.
