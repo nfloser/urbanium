@@ -63,8 +63,7 @@ class DwdCdcStationLocationProvider:
 
         lines = payload.decode("latin-1").splitlines()
         if not lines or not all(
-            key in lines[0].lower()
-            for key in ("stations_id", "geobreite", "geolaenge")
+            key in lines[0].lower() for key in ("stations_id", "geobreite", "geolaenge")
         ):
             raise DwdStationMetadataError("unexpected DWD station inventory header")
 
