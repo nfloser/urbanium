@@ -242,7 +242,6 @@ class VbbGtfsRtProvider:
         return observed_at, freshness, "feed_header", None
 
 
-
 def _alert_stop_references(
     message: gtfs_realtime_pb2.FeedMessage,
 ) -> tuple[VbbAlertStopReference, ...]:
