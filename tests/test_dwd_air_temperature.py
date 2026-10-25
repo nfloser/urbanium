@@ -142,8 +142,10 @@ def test_receipt_clock_is_sampled_after_the_archive_download() -> None:
 
 
 def test_archive_updated_during_download_keeps_its_latest_valid_observation() -> None:
-    payload = (FIXTURES / "air_temperature_now.csv").read_bytes().replace(
-        b"202609291200", b"202609291230"
+    payload = (
+        (FIXTURES / "air_temperature_now.csv")
+        .read_bytes()
+        .replace(b"202609291200", b"202609291230")
     )
     buffer = BytesIO()
     with ZipFile(buffer, "w", ZIP_DEFLATED) as target:
