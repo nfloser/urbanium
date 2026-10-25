@@ -20,9 +20,7 @@ from pathlib import Path
 from urbanium.providers.dwd.air_temperature import load_dwd_air_temperature_config
 from urbanium.providers.dwd.station_location import DwdCdcStationLocationProvider
 
-config = load_dwd_air_temperature_config(
-    Path("cities/berlin/providers/dwd_air_temperature.yaml")
-)
+config = load_dwd_air_temperature_config(Path("cities/berlin/providers/dwd_air_temperature.yaml"))
 location = DwdCdcStationLocationProvider(config).read()
 if location is None:
     print("Station absent from DWD inventory")
