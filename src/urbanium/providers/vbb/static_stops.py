@@ -10,9 +10,11 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
-from io import StringIO
+from io import BytesIO, StringIO
 from re import fullmatch
 from typing import TYPE_CHECKING, cast
+from zipfile import ZIP_DEFLATED, ZIP_STORED, BadZipFile, LargeZipFile, ZipFile
+from zlib import error as ZlibError
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
@@ -24,6 +26,8 @@ if TYPE_CHECKING:
     from urbanium.providers.vbb.gtfs_rt import VbbAlertStopReference
 
 MAX_STOPS_TXT_BYTES = 20_000_000
+MAX_GTFS_ZIP_BYTES = 100_000_000
+MAX_GTFS_ZIP_MEMBERS = 128
 _REQUIRED_COLUMNS = {"stop_id", "stop_lat", "stop_lon"}
 _LOCATION_TYPES = {"", "0", "1", "2", "3", "4"}
 _COORDINATE_PATTERN = r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
@@ -72,7 +76,73 @@ class VbbGtfsStaticStopInventory:
         self.config = config
         self.retrieved_at = retrieved_at
         self._digest = sha256(stops_txt).hexdigest()
+        self._archive_digest: str | None = None
         self._points = _parse_stops(stops_txt)
+
+    @classmethod
+    def from_gtfs_zip(
+        cls,
+        config: VbbGtfsStaticStopConfig,
+        *,
+        archive_bytes: bytes,
+        retrieved_at: datetime,
+    ) -> VbbGtfsStaticStopInventory:
+        """Read root stops.txt from a bounded supplied ZIP without extracting files."""
+
+        if len(archive_bytes) > MAX_GTFS_ZIP_BYTES:
+            raise VbbGtfsStaticStopError("GTFS ZIP archive exceeds size limit")
+
+        try:
+            with ZipFile(BytesIO(archive_bytes)) as archive:
+                members = archive.infolist()
+                if len(members) > MAX_GTFS_ZIP_MEMBERS:
+                    raise VbbGtfsStaticStopError("GTFS ZIP has too many members")
+
+                for member in members:
+                    if member.flag_bits & 1:
+                        raise VbbGtfsStaticStopError("encrypted GTFS ZIP member")
+                    if member.compress_type not in (ZIP_STORED, ZIP_DEFLATED):
+                        raise VbbGtfsStaticStopError("unsupported GTFS ZIP compression")
+
+                matches = [
+                    member
+                    for member in members
+                    if member.filename == "stops.txt" and not member.is_dir()
+                ]
+                if len(matches) != 1:
+                    raise VbbGtfsStaticStopError("GTFS ZIP requires one root stops.txt")
+
+                if matches[0].file_size > MAX_STOPS_TXT_BYTES:
+                    raise VbbGtfsStaticStopError("GTFS stops.txt exceeds size limit")
+                with archive.open(matches[0]) as stop_stream:
+                    stops_txt = stop_stream.read(MAX_STOPS_TXT_BYTES + 1)
+                if len(stops_txt) > MAX_STOPS_TXT_BYTES:
+                    raise VbbGtfsStaticStopError("GTFS stops.txt exceeds size limit")
+        except VbbGtfsStaticStopError:
+            raise
+        except (
+            BadZipFile,
+            LargeZipFile,
+            EOFError,
+            OSError,
+            RuntimeError,
+            ZlibError,
+            ValueError,
+            UnicodeError,
+            OverflowError,
+            NotImplementedError,
+        ) as exc:
+            raise VbbGtfsStaticStopError("invalid GTFS ZIP archive") from exc
+
+        inventory = cls(config, stops_txt=stops_txt, retrieved_at=retrieved_at)
+        inventory._archive_digest = sha256(archive_bytes).hexdigest()
+        return inventory
+
+    @property
+    def archive_sha256(self) -> str | None:
+        """Fingerprint of the supplied release, absent for direct stops.txt input."""
+
+        return self._archive_digest
 
     def resolve(self, stop_id: str) -> EntityPointLocation | None:
         """Look up an exact ID; absence or missing coordinates remain unknown."""
@@ -84,6 +154,9 @@ class VbbGtfsStaticStopInventory:
         # GTFS IDs may contain punctuation not permitted in canonical entity IDs.
         # Hash the raw UTF-8 ID rather than stripping characters or conflating IDs.
         stop_hash = sha256(stop_id.encode("utf-8")).hexdigest()
+        record_id = f"stops.txt:{stop_hash}:{self._digest}"
+        if self._archive_digest is not None:
+            record_id += f":gtfs.zip:{self._archive_digest}"
         return EntityPointLocation(
             entity=EntityReference(
                 city_id=self.config.city_id,
@@ -97,7 +170,7 @@ class VbbGtfsStaticStopInventory:
                 EvidenceReference(
                     city_id=self.config.city_id,
                     source_id=self.config.source_id,
-                    record_id=f"stops.txt:{stop_hash}:{self._digest}",
+                    record_id=record_id,
                     retrieved_at=self.retrieved_at,
                 ),
             ),
