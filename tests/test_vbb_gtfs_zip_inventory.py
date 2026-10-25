@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 from hashlib import sha256
 from io import BytesIO
+from warnings import catch_warnings, filterwarnings
 from zipfile import ZIP_BZIP2, ZIP_DEFLATED, ZIP_STORED, ZipFile
 
 import pytest
@@ -24,9 +25,11 @@ def archive(
     compression: int = ZIP_DEFLATED,
 ) -> bytes:
     buffer = BytesIO()
-    with ZipFile(buffer, "w", compression=compression) as zip_file:
-        for name, payload in entries:
-            zip_file.writestr(name, payload)
+    with catch_warnings():
+        filterwarnings("ignore", message="Duplicate name:.*", category=UserWarning)
+        with ZipFile(buffer, "w", compression=compression) as zip_file:
+            for name, payload in entries:
+                zip_file.writestr(name, payload)
     return buffer.getvalue()
 
 
