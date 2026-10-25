@@ -55,35 +55,71 @@ _DESCRIPTOR = ComponentDescriptor(
 class _Evidence:
     snapshot: dict[str, JsonValue]
     has_measurements: bool
-    observation_times: tuple[datetime, ...]
+    observations: tuple[Observation, ...]
     usable: bool
     problems: tuple[ComponentRunProblem, ...]
 
 
-def _closest_observation_gap_seconds(
-    weather_times: tuple[datetime, ...], transport_times: tuple[datetime, ...]
-) -> float | None:
-    """Minimum separation of observed instants, not an inferred shared observation window."""
-    if not weather_times or not transport_times:
-        return None
+def _closest_observation_pair(
+    weather: tuple[Observation, ...], transport: tuple[Observation, ...]
+) -> tuple[float | None, dict[str, JsonValue] | None]:
+    """Trace the nearest observed instants without implying shared coverage."""
+    if not weather or not transport:
+        return None, None
 
-    weather_ordered = sorted(instant.astimezone(UTC) for instant in weather_times)
-    transport_ordered = sorted(instant.astimezone(UTC) for instant in transport_times)
+    def order_key(item: Observation) -> tuple[datetime, str, str, datetime, str]:
+        return (
+            item.observed_at.astimezone(UTC),
+            item.entity.entity_type,
+            item.entity.entity_id,
+            item.received_at.astimezone(UTC),
+            str(item.value),
+        )
+
+    weather_ordered = sorted(weather, key=order_key)
+    transport_ordered = sorted(transport, key=order_key)
     weather_index = transport_index = 0
-    closest: float | None = None
+    best: tuple[Observation, Observation] | None = None
+    best_key: tuple[float, datetime, datetime, str, str, str, str] | None = None
+
     while weather_index < len(weather_ordered) and transport_index < len(transport_ordered):
         left = weather_ordered[weather_index]
         right = transport_ordered[transport_index]
-        seconds = abs((left - right).total_seconds())
-        if closest is None or seconds < closest:
-            closest = seconds
-        if seconds == 0:
-            break
-        if left < right:
+        left_time = left.observed_at.astimezone(UTC)
+        right_time = right.observed_at.astimezone(UTC)
+        candidate = (
+            abs((left_time - right_time).total_seconds()),
+            left_time,
+            right_time,
+            left.entity.entity_type,
+            left.entity.entity_id,
+            right.entity.entity_type,
+            right.entity.entity_id,
+        )
+        if best_key is None or candidate < best_key:
+            best_key = candidate
+            best = (left, right)
+        if left_time <= right_time:
             weather_index += 1
         else:
             transport_index += 1
-    return closest
+
+    assert best is not None and best_key is not None
+    weather_match, transport_match = best
+    return best_key[0], {
+        "weather": {
+            "entity": weather_match.entity.model_dump(mode="json"),
+            "observed_at": weather_match.observed_at.astimezone(UTC).isoformat().replace(
+                "+00:00", "Z"
+            ),
+        },
+        "realtime_transport": {
+            "entity": transport_match.entity.model_dump(mode="json"),
+            "observed_at": transport_match.observed_at.astimezone(UTC).isoformat().replace(
+                "+00:00", "Z"
+            ),
+        },
+    }
 
 
 class WeatherTransportReadiness:
@@ -108,12 +144,14 @@ class WeatherTransportReadiness:
         if not weather.has_measurements and not transport.has_measurements:
             return ComponentExecutionOutcome(status=RunStatus.UNAVAILABLE, problems=problems)
 
+        gap_seconds, closest_pair = _closest_observation_pair(
+            weather.observations, transport.observations
+        )
         snapshot: dict[str, JsonValue] = {
             "independent_observations_only": True,
             "both_sources_usable": weather.usable and transport.usable,
-            "closest_observation_gap_seconds": _closest_observation_gap_seconds(
-                weather.observation_times, transport.observation_times
-            ),
+            "closest_observation_gap_seconds": gap_seconds,
+            "closest_observation_pair": closest_pair,
             "weather": weather.snapshot,
             "realtime_transport": transport.snapshot,
         }
@@ -155,7 +193,7 @@ class WeatherTransportReadiness:
             return _Evidence(
                 snapshot={"usable": False, "validated_observations": []},
                 has_measurements=False,
-                observation_times=(),
+                observations=(),
                 usable=False,
                 problems=(
                     ComponentRunProblem(
@@ -260,7 +298,7 @@ class WeatherTransportReadiness:
                 "validated_observations": [obs.model_dump(mode="json") for obs in ordered],
             },
             has_measurements=bool(ordered),
-            observation_times=tuple(obs.observed_at for obs in ordered),
+            observations=tuple(ordered),
             usable=usable,
             problems=tuple(problems),
         )
