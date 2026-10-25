@@ -75,7 +75,9 @@ not a spatial join. In particular:
 - Missing location evidence remains missing. Existing `Observation`,
   `ProviderResult` and `source_readiness@1` contracts are unchanged.
 
-A later slice may bind verified station metadata and suitable
-transport-event geometry, then define a separate, evidence-backed spatial
-relationship or coverage assessment. That work needs provider-specific
-license and accuracy review; it is not implemented here.
+The [DWD station inventory reader](../providers/dwd-station-locations.md)
+now produces these point assertions from the upstream station listing for
+configured stations. It does not establish a measurement footprint or
+validate historical station movement. Suitable transport-event geometry
+and a separate, evidence-backed spatial relationship or coverage assessment
+remain future work.
