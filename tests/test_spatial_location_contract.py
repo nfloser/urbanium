@@ -78,9 +78,7 @@ def test_location_rejects_evidence_from_another_city() -> None:
 
 
 def test_location_rejects_future_evidence() -> None:
-    future = location().evidence[0].model_copy(
-        update={"retrieved_at": NOW + timedelta(seconds=1)}
-    )
+    future = location().evidence[0].model_copy(update={"retrieved_at": NOW + timedelta(seconds=1)})
     with pytest.raises(ValidationError, match="postdate"):
         location(evidence=(future,))
 
