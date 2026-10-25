@@ -129,6 +129,8 @@ def test_city_identity_is_scoped_without_changing_source_coordinates() -> None:
         (HEADER + ",Unnamed,52.5,13.4,0\n").encode(),
         (HEADER + "id,Bad,91,13.4,0\n").encode(),
         (HEADER + "id,Bad,nan,13.4,0\n").encode(),
+        (HEADER + "id,Bad,5_2,13.4,0\n").encode(),
+        (HEADER + "id,Bad,５２,13.4,0\n").encode(),
         (HEADER + "id,Bad,52.5,,0\n").encode(),
         (HEADER + "id,Bad,52.5,13.4,99\n").encode(),
         (HEADER + "id,Bad,52.5,13.4,0,extra\n").encode(),
