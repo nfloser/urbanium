@@ -118,7 +118,20 @@ class VbbGtfsStaticStopInventory:
                     stops_txt = stop_stream.read(MAX_STOPS_TXT_BYTES + 1)
                 if len(stops_txt) > MAX_STOPS_TXT_BYTES:
                     raise VbbGtfsStaticStopError("GTFS stops.txt exceeds size limit")
-        except (BadZipFile, LargeZipFile, EOFError, OSError, RuntimeError, ZlibError) as exc:
+        except VbbGtfsStaticStopError:
+            raise
+        except (
+            BadZipFile,
+            LargeZipFile,
+            EOFError,
+            OSError,
+            RuntimeError,
+            ZlibError,
+            ValueError,
+            UnicodeError,
+            OverflowError,
+            NotImplementedError,
+        ) as exc:
             raise VbbGtfsStaticStopError("invalid GTFS ZIP archive") from exc
 
         inventory = cls(config, stops_txt=stops_txt, retrieved_at=retrieved_at)
