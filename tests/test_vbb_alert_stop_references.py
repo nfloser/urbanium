@@ -99,6 +99,19 @@ def test_unavailable_feeds_never_expose_unvalidated_stop_references() -> None:
     assert unavailable.stop_references == ()
 
 
+def test_future_dated_feed_does_not_leak_stop_references() -> None:
+    message = gtfs_realtime_pb2.FeedMessage()
+    message.ParseFromString(_feed())
+    message.header.timestamp = int(NOW.timestamp()) + 60
+
+    snapshot = _provider(message.SerializeToString()).read_snapshot()
+
+    assert snapshot.result.availability is Availability.UNAVAILABLE
+    assert snapshot.stop_references == ()
+    assert snapshot.result.error is not None
+    assert snapshot.result.error.code is ProviderErrorCode.INVALID_RESPONSE
+
+
 def test_snapshot_fetches_once_and_existing_read_contract_remains_numeric() -> None:
     calls = 0
 
