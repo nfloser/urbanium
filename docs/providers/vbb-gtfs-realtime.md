@@ -33,8 +33,9 @@ The original `read()` API still returns only the canonical provider result.
 
 A stop reference contains the raw GTFS-Realtime Alert entity ID, its
 zero-based `informed_entity` selector index, and the selector's explicit
-`stop_id`. Order and repeated references are retained so a later stage can
-inspect the original selector and its additional route/trip qualifications.
+`stop_id`. Order and repeated references are retained. The selector
+index identifies its position in the source feed; the snapshot does **not**
+retain the full selector or its additional route/trip qualifications.
 Selectors without a nonempty `stop_id` and non-Alert feed entities produce
 no stop reference. Invalid or unavailable feeds return an empty tuple; a
 valid feed with a missing header timestamp retains the references while
