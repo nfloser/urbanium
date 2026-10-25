@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from hashlib import sha256
 from io import StringIO
+from re import fullmatch
 from typing import TYPE_CHECKING, cast
 
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
 MAX_STOPS_TXT_BYTES = 20_000_000
 _REQUIRED_COLUMNS = {"stop_id", "stop_lat", "stop_lon"}
 _LOCATION_TYPES = {"", "0", "1", "2", "3", "4"}
+_COORDINATE_PATTERN = r"[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
 
 
 class VbbGtfsStaticStopError(ValueError):
@@ -144,6 +146,11 @@ def _parse_stops(payload: bytes) -> dict[str, Wgs84Point | None]:
                 raise VbbGtfsStaticStopError("incomplete GTFS stop coordinates")
 
             if latitude:
+                if not (
+                    fullmatch(_COORDINATE_PATTERN, latitude)
+                    and fullmatch(_COORDINATE_PATTERN, longitude)
+                ):
+                    raise VbbGtfsStaticStopError("invalid GTFS stop coordinate syntax")
                 try:
                     point = Wgs84Point(latitude=float(latitude), longitude=float(longitude))
                 except (ValueError, ValidationError) as exc:
