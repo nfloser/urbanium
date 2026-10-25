@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 MAX_STOPS_TXT_BYTES = 20_000_000
 _REQUIRED_COLUMNS = {"stop_id", "stop_lat", "stop_lon"}
 _LOCATION_TYPES = {"", "0", "1", "2", "3", "4"}
-_COORDINATE_PATTERN = r"[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
+_COORDINATE_PATTERN = r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
 
 
 class VbbGtfsStaticStopError(ValueError):
