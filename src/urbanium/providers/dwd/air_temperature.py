@@ -102,16 +102,22 @@ class DwdCdcAirTemperatureProvider:
         return f"{DWD_NOW_BASE_URL}/10minutenwerte_TU_{self.config.station_id}_now.zip"
 
     def read(self) -> ProviderResult:
-        received_at = self._clock()
-        if received_at.tzinfo is None or received_at.utcoffset() is None:
-            return _unavailable(ProviderErrorCode.UNKNOWN, "provider clock is not timezone-aware")
         try:
             archive = self._fetcher(self.url, self._timeout)
-            observations, invalid_rows = self._parse_archive(archive, received_at)
         except TimeoutError:
             return _unavailable(ProviderErrorCode.TIMEOUT, "DWD request timed out")
         except OSError:
             return _unavailable(ProviderErrorCode.UPSTREAM, "DWD request failed")
+        except (BadZipFile, KeyError, UnicodeError, ValueError):
+            return _unavailable(ProviderErrorCode.INVALID_RESPONSE, "invalid DWD archive")
+
+        # Capture receipt after downloading: a newer row can appear while the
+        # request is in flight and must not be mistaken for a future observation.
+        received_at = self._clock()
+        if received_at.tzinfo is None or received_at.utcoffset() is None:
+            return _unavailable(ProviderErrorCode.UNKNOWN, "provider clock is not timezone-aware")
+        try:
+            observations, invalid_rows = self._parse_archive(archive, received_at)
         except (BadZipFile, KeyError, UnicodeError, ValueError):
             return _unavailable(ProviderErrorCode.INVALID_RESPONSE, "invalid DWD archive")
 
