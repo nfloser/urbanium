@@ -1,6 +1,6 @@
 """Readiness snapshots never turn independent source evidence into an impact claim."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -310,6 +310,67 @@ def test_evidence_prepared_at_execution_with_different_offset_is_valid() -> None
     assert attempt.run is not None
     assert attempt.run.status is RunStatus.AVAILABLE
     assert attempt.run.outputs[0].payload["both_sources_usable"] is True
+
+
+def test_closest_observation_gap_is_measured_without_changing_readiness() -> None:
+    earlier = observation("realtime_transport").model_copy(
+        update={"observed_at": OBSERVED - timedelta(minutes=2)}
+    )
+    attempt = assess(evidence("weather"), evidence("realtime_transport", observations=(earlier,)))
+
+    assert attempt.run is not None
+    assert attempt.run.status is RunStatus.AVAILABLE
+    snapshot = attempt.run.outputs[0].payload
+    assert snapshot["both_sources_usable"] is True
+    assert snapshot["closest_observation_gap_seconds"] == 120.0
+
+
+def test_closest_gap_uses_nearest_pair_across_multiple_observations() -> None:
+    weather = (
+        observation("weather").model_copy(
+            update={"observed_at": OBSERVED - timedelta(minutes=5)}
+        ),
+        observation("weather"),
+    )
+    transport = (
+        observation("realtime_transport").model_copy(
+            update={"observed_at": OBSERVED - timedelta(minutes=10)}
+        ),
+        observation("realtime_transport").model_copy(
+            update={"observed_at": OBSERVED - timedelta(seconds=15)}
+        ),
+    )
+    attempt = assess(
+        evidence("weather", observations=tuple(reversed(weather))),
+        evidence("realtime_transport", observations=transport),
+    )
+
+    assert attempt.run is not None
+    assert attempt.run.outputs[0].payload["closest_observation_gap_seconds"] == 15.0
+
+
+def test_gap_compares_instants_across_timezone_offsets() -> None:
+    same_instant = observation("realtime_transport").model_copy(
+        update={"observed_at": OBSERVED.astimezone(timezone(timedelta(hours=2)))}
+    )
+    attempt = assess(
+        evidence("weather"),
+        evidence("realtime_transport", observations=(same_instant,)),
+    )
+
+    assert attempt.run is not None
+    assert attempt.run.outputs[0].payload["closest_observation_gap_seconds"] == 0.0
+
+
+def test_gap_is_unknown_when_one_side_has_no_validated_observations() -> None:
+    attempt = assess(
+        evidence("weather"),
+        evidence("realtime_transport", availability=Availability.UNAVAILABLE),
+    )
+
+    assert attempt.run is not None
+    assert attempt.run.status is RunStatus.DEGRADED
+    assert attempt.run.outputs[0].payload["closest_observation_gap_seconds"] is None
 
 
 def test_mainz_does_not_execute_without_verified_transport_capability() -> None:
