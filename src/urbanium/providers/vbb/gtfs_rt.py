@@ -1,6 +1,7 @@
 """VBB GTFS-Realtime alert-count adapter."""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -27,6 +28,23 @@ from urbanium.core.provider import (
 MAX_FEED_BYTES = 5_000_000
 FetchBytes = Callable[[str, float], bytes]
 Clock = Callable[[], datetime]
+
+
+@dataclass(frozen=True, slots=True)
+class VbbAlertStopReference:
+    """A stop ID explicitly named by an Alert selector, not an affected-stop claim."""
+
+    alert_id: str
+    selector_index: int
+    stop_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class VbbAlertSnapshot:
+    """Canonical alert count and provider-specific stop references from one feed."""
+
+    result: ProviderResult
+    stop_references: tuple[VbbAlertStopReference, ...]
 
 
 class VbbGtfsRtConfigurationError(ValueError):
@@ -93,31 +111,52 @@ class VbbGtfsRtProvider:
         return str(self.config.endpoint).rstrip("/")
 
     def read(self) -> ProviderResult:
+        """Preserve the canonical count-only provider contract."""
+
+        return self.read_snapshot().result
+
+    def read_snapshot(self) -> VbbAlertSnapshot:
+        """Read one feed, retaining only explicitly named Alert stop references."""
+
         try:
             payload = self._fetcher(self.url, self._timeout)
         except TimeoutError:
-            return _unavailable(ProviderErrorCode.TIMEOUT, "VBB GTFS-RT request timed out")
+            return VbbAlertSnapshot(
+                result=_unavailable(ProviderErrorCode.TIMEOUT, "VBB GTFS-RT request timed out"),
+                stop_references=(),
+            )
         except OSError:
-            return _unavailable(ProviderErrorCode.UPSTREAM, "VBB GTFS-RT request failed")
+            return VbbAlertSnapshot(
+                result=_unavailable(ProviderErrorCode.UPSTREAM, "VBB GTFS-RT request failed"),
+                stop_references=(),
+            )
         except ValueError:
-            return _unavailable(
-                ProviderErrorCode.INVALID_RESPONSE,
-                "VBB GTFS-RT feed exceeds size limit",
+            return VbbAlertSnapshot(
+                result=_unavailable(
+                    ProviderErrorCode.INVALID_RESPONSE,
+                    "VBB GTFS-RT feed exceeds size limit",
+                ),
+                stop_references=(),
             )
 
-        # The receipt timestamp must follow the network read: a feed generated
-        # while downloading may otherwise appear incorrectly to be in the future.
+        # A feed generated while downloading may be newer than request start.
         received_at = self._clock()
         if received_at.tzinfo is None or received_at.utcoffset() is None:
-            return _unavailable(
-                ProviderErrorCode.UNKNOWN,
-                "provider clock is not timezone-aware",
+            return VbbAlertSnapshot(
+                result=_unavailable(
+                    ProviderErrorCode.UNKNOWN,
+                    "provider clock is not timezone-aware",
+                ),
+                stop_references=(),
             )
 
         if len(payload) > MAX_FEED_BYTES:
-            return _unavailable(
-                ProviderErrorCode.INVALID_RESPONSE,
-                "VBB GTFS-RT feed exceeds size limit",
+            return VbbAlertSnapshot(
+                result=_unavailable(
+                    ProviderErrorCode.INVALID_RESPONSE,
+                    "VBB GTFS-RT feed exceeds size limit",
+                ),
+                stop_references=(),
             )
 
         try:
@@ -147,24 +186,30 @@ class VbbGtfsRtProvider:
                 quality_scheme="gtfs_rt_snapshot_time",
                 quality_code=quality_code,
             )
+            stop_references = _alert_stop_references(message)
         except (DecodeError, OverflowError, OSError, ValueError):
-            return _unavailable(
-                ProviderErrorCode.INVALID_RESPONSE,
-                "invalid VBB GTFS-Realtime feed",
+            return VbbAlertSnapshot(
+                result=_unavailable(
+                    ProviderErrorCode.INVALID_RESPONSE,
+                    "invalid VBB GTFS-Realtime feed",
+                ),
+                stop_references=(),
             )
 
         if degraded_error is not None:
-            return ProviderResult(
+            result = ProviderResult(
                 availability=Availability.DEGRADED,
                 freshness=freshness,
                 observations=(observation,),
                 error=degraded_error,
             )
-        return ProviderResult(
-            availability=Availability.AVAILABLE,
-            freshness=freshness,
-            observations=(observation,),
-        )
+        else:
+            result = ProviderResult(
+                availability=Availability.AVAILABLE,
+                freshness=freshness,
+                observations=(observation,),
+            )
+        return VbbAlertSnapshot(result=result, stop_references=stop_references)
 
     def _snapshot_time(
         self,
@@ -195,6 +240,24 @@ class VbbGtfsRtProvider:
             else Freshness.STALE
         )
         return observed_at, freshness, "feed_header", None
+
+
+def _alert_stop_references(
+    message: gtfs_realtime_pb2.FeedMessage,
+) -> tuple[VbbAlertStopReference, ...]:
+    # A selector can also constrain a route/trip. Its stop ID is a source
+    # reference only, not proof that the entire stop is affected.
+    return tuple(
+        VbbAlertStopReference(
+            alert_id=entity.id,
+            selector_index=index,
+            stop_id=selector.stop_id,
+        )
+        for entity in message.entity
+        if entity.HasField("alert")
+        for index, selector in enumerate(entity.alert.informed_entity)
+        if selector.HasField("stop_id") and selector.stop_id
+    )
 
 
 def _unavailable(code: ProviderErrorCode, message: str) -> ProviderResult:

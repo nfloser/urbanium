@@ -23,6 +23,33 @@ A count of zero is a valid available observation. It means the parsed snapshot c
 
 Trip updates and vehicle positions may coexist in the feed but are not reinterpreted as alerts. The adapter does not infer affected routes, disruption severity or causes.
 
+## Explicit Alert stop references
+
+For consumers that need to inspect source-backed identifiers, call
+`VbbGtfsRtProvider.read_snapshot()`. It performs **one** feed request and
+returns a `VbbAlertSnapshot` containing the unchanged canonical
+`ProviderResult` and a tuple of `VbbAlertStopReference` values.
+The original `read()` API still returns only the canonical provider result.
+
+A stop reference contains the raw GTFS-Realtime Alert entity ID, its
+zero-based `informed_entity` selector index, and the selector's explicit
+`stop_id`. Order and repeated references are retained. The selector
+index identifies its position in the source feed; the snapshot does **not**
+retain the full selector or its additional route/trip qualifications.
+Selectors without a nonempty `stop_id` and non-Alert feed entities produce
+no stop reference. Invalid or unavailable feeds return an empty tuple; a
+valid feed with a missing header timestamp retains the references while
+reporting degraded temporal provenance as before.
+
+**These are identifiers, not locations or impact assertions.** A selector
+may constrain a route or trip in addition to a stop. This extraction does
+not interpret those qualifications, resolve stop IDs to coordinates, claim
+that a stop is disrupted, or infer an affected service area. A versioned,
+licensed GTFS static stop inventory and an explicit selector interpretation
+would be needed before considering spatial joins with DWD station points.
+An empty tuple does not mean that no service alerts exist: alerts may
+target routes, trips or agencies without naming a stop.
+
 ## Time and freshness
 
 When the optional GTFS-Realtime feed-header timestamp is present, it becomes `observed_at`. Freshness is assessed against the configured threshold, currently five minutes.
