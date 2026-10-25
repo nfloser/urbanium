@@ -32,10 +32,7 @@ def station_row(
     longitude: str = "13.4021",
 ) -> str:
     # Coordinates in fixtures are illustrative, not verified station metadata.
-    return (
-        f"{station_id} 19480101 20261025 48 {latitude} {longitude} "
-        "Example Station Berlin\n"
-    )
+    return f"{station_id} 19480101 20261025 48 {latitude} {longitude} Example Station Berlin\n"
 
 
 def subject(
@@ -67,9 +64,7 @@ def test_station_list_yields_sourced_reference_point() -> None:
     assert result.asserted_at == NOW
     assert result.evidence[0].source_id == "dwd_open_data"
     assert result.evidence[0].retrieved_at == NOW
-    assert result.evidence[0].record_id.startswith(
-        "zehn_min_tu_Beschreibung_Stationen.txt:00433:"
-    )
+    assert result.evidence[0].record_id.startswith("zehn_min_tu_Beschreibung_Stationen.txt:00433:")
     assert len(result.evidence[0].record_id.split(":")[-1]) == 64
 
 
@@ -118,12 +113,12 @@ def test_network_failure_is_not_mistaken_for_missing_station() -> None:
         raise TimeoutError("source unreachable")
 
     config = DwdAirTemperatureConfig(
-        city_id="berlin", source_id="dwd_open_data", station_id="00433",
+        city_id="berlin",
+        source_id="dwd_open_data",
+        station_id="00433",
         station_name="Berlin-Tempelhof",
     )
-    provider = DwdCdcStationLocationProvider(
-        config, fetcher=failing_fetcher, clock=lambda: NOW
-    )
+    provider = DwdCdcStationLocationProvider(config, fetcher=failing_fetcher, clock=lambda: NOW)
     with pytest.raises(DwdStationMetadataError, match="request"):
         provider.read()
 
@@ -144,9 +139,7 @@ def test_clock_is_sampled_after_download() -> None:
         city_id="berlin", source_id="dwd_open_data", station_id="00433",
         station_name="Berlin-Tempelhof",
     )
-    result = DwdCdcStationLocationProvider(
-        config, fetcher=fetcher, clock=clock
-    ).read()
+    result = DwdCdcStationLocationProvider(config, fetcher=fetcher, clock=clock).read()
     assert result is not None and result.asserted_at == NOW
 
 
