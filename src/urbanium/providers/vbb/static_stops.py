@@ -117,8 +117,10 @@ def _parse_stops(payload: bytes) -> dict[str, Wgs84Point | None]:
     try:
         reader = csv.DictReader(StringIO(payload.decode("utf-8-sig"), newline=""), strict=True)
         header = reader.fieldnames
-        if header is None or len(set(header)) != len(header) or not _REQUIRED_COLUMNS <= set(
-            header
+        if (
+            header is None
+            or len(set(header)) != len(header)
+            or not _REQUIRED_COLUMNS <= set(header)
         ):
             raise VbbGtfsStaticStopError("invalid GTFS stops.txt header")
 
