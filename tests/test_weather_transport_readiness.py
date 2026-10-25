@@ -327,9 +327,7 @@ def test_closest_observation_gap_is_measured_without_changing_readiness() -> Non
 
 def test_closest_gap_uses_nearest_pair_across_multiple_observations() -> None:
     weather = (
-        observation("weather").model_copy(
-            update={"observed_at": OBSERVED - timedelta(minutes=5)}
-        ),
+        observation("weather").model_copy(update={"observed_at": OBSERVED - timedelta(minutes=5)}),
         observation("weather"),
     )
     transport = (
