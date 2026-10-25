@@ -109,15 +109,15 @@ def _closest_observation_pair(
     return best_key[0], {
         "weather": {
             "entity": weather_match.entity.model_dump(mode="json"),
-            "observed_at": weather_match.observed_at.astimezone(UTC).isoformat().replace(
-                "+00:00", "Z"
-            ),
+            "observed_at": weather_match.observed_at.astimezone(UTC)
+            .isoformat()
+            .replace("+00:00", "Z"),
         },
         "realtime_transport": {
             "entity": transport_match.entity.model_dump(mode="json"),
-            "observed_at": transport_match.observed_at.astimezone(UTC).isoformat().replace(
-                "+00:00", "Z"
-            ),
+            "observed_at": transport_match.observed_at.astimezone(UTC)
+            .isoformat()
+            .replace("+00:00", "Z"),
         },
     }
 
