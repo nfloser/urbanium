@@ -31,9 +31,7 @@ def archive(
 
 
 def load(payload: bytes) -> VbbGtfsStaticStopInventory:
-    return VbbGtfsStaticStopInventory.from_gtfs_zip(
-        CONFIG, archive_bytes=payload, retrieved_at=NOW
-    )
+    return VbbGtfsStaticStopInventory.from_gtfs_zip(CONFIG, archive_bytes=payload, retrieved_at=NOW)
 
 
 def test_archive_lookup_preserves_source_and_archive_fingerprints() -> None:
