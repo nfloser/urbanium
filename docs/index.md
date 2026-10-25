@@ -10,6 +10,7 @@ The documentation distinguishes implemented platform features from planned work.
 - [Provider evidence in component inputs](concepts/provider-evidence-inputs.md)
 - [Versioned machine API](api/v1.md)
 - [Entities and relationships](concepts/entities-and-relationships.md)
+- [Evidence-backed entity point locations](concepts/spatial-evidence.md)
 - [Bounded RDF projection](ontology/rdf-projection.md)
 - [DWD CDC air-temperature adapter](providers/dwd-air-temperature.md)
 - [VBB GTFS-Realtime operational alert adapter](providers/vbb-gtfs-realtime.md)
