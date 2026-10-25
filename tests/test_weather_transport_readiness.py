@@ -157,6 +157,7 @@ def test_stale_weather_keeps_observations_but_degrades_readiness() -> None:
     assert [problem.code for problem in attempt.run.problems] == ["weather_stale"]
     snapshot = attempt.run.outputs[0].payload
     assert snapshot["both_sources_usable"] is False
+    assert snapshot["closest_observation_gap_seconds"] == 0.0
     assert snapshot["weather"]["read"]["freshness"] == "stale"
     assert snapshot["weather"]["validated_observations"][0]["value"] == "0"
 
@@ -252,6 +253,7 @@ def test_forged_city_binding_is_rejected_without_leaking_unvalidated_readings() 
     assert [problem.code for problem in attempt.run.problems] == ["weather_invalid_evidence"]
     weather_result = attempt.run.outputs[0].payload["weather"]
     assert weather_result["validated_observations"] == []
+    assert attempt.run.outputs[0].payload["closest_observation_gap_seconds"] is None
     assert "read" not in weather_result
 
 
