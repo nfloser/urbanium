@@ -1,7 +1,7 @@
 """Evidence-only readiness assessment across independent weather and transport sources."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from pydantic import JsonValue
@@ -55,8 +55,35 @@ _DESCRIPTOR = ComponentDescriptor(
 class _Evidence:
     snapshot: dict[str, JsonValue]
     has_measurements: bool
+    observation_times: tuple[datetime, ...]
     usable: bool
     problems: tuple[ComponentRunProblem, ...]
+
+
+def _closest_observation_gap_seconds(
+    weather_times: tuple[datetime, ...], transport_times: tuple[datetime, ...]
+) -> float | None:
+    """Minimum separation of observed instants, not an inferred shared observation window."""
+    if not weather_times or not transport_times:
+        return None
+
+    weather_ordered = sorted(instant.astimezone(UTC) for instant in weather_times)
+    transport_ordered = sorted(instant.astimezone(UTC) for instant in transport_times)
+    weather_index = transport_index = 0
+    closest: float | None = None
+    while weather_index < len(weather_ordered) and transport_index < len(transport_ordered):
+        left = weather_ordered[weather_index]
+        right = transport_ordered[transport_index]
+        seconds = abs((left - right).total_seconds())
+        if closest is None or seconds < closest:
+            closest = seconds
+        if seconds == 0:
+            break
+        if left < right:
+            weather_index += 1
+        else:
+            transport_index += 1
+    return closest
 
 
 class WeatherTransportReadiness:
@@ -84,6 +111,9 @@ class WeatherTransportReadiness:
         snapshot: dict[str, JsonValue] = {
             "independent_observations_only": True,
             "both_sources_usable": weather.usable and transport.usable,
+            "closest_observation_gap_seconds": _closest_observation_gap_seconds(
+                weather.observation_times, transport.observation_times
+            ),
             "weather": weather.snapshot,
             "realtime_transport": transport.snapshot,
         }
@@ -125,6 +155,7 @@ class WeatherTransportReadiness:
             return _Evidence(
                 snapshot={"usable": False, "validated_observations": []},
                 has_measurements=False,
+                observation_times=(),
                 usable=False,
                 problems=(
                     ComponentRunProblem(
@@ -229,6 +260,7 @@ class WeatherTransportReadiness:
                 "validated_observations": [obs.model_dump(mode="json") for obs in ordered],
             },
             has_measurements=bool(ordered),
+            observation_times=tuple(obs.observed_at for obs in ordered),
             usable=usable,
             problems=tuple(problems),
         )
