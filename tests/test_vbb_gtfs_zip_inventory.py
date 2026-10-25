@@ -8,6 +8,7 @@ from zipfile import ZIP_BZIP2, ZIP_DEFLATED, ZIP_STORED, ZipFile
 
 import pytest
 
+from urbanium.providers.vbb.gtfs_rt import VbbAlertStopReference
 from urbanium.providers.vbb.static_stops import (
     VbbGtfsStaticStopConfig,
     VbbGtfsStaticStopError,
@@ -65,6 +66,20 @@ def test_identical_stops_in_different_releases_retain_distinct_provenance() -> N
     assert first_point.entity == second_point.entity
     assert first_point.point == second_point.point
     assert first_point.evidence != second_point.evidence
+
+
+def test_archive_resolves_alert_stop_references_without_claiming_impact() -> None:
+    references = (
+        VbbAlertStopReference(alert_id="a", selector_index=0, stop_id="de:1"),
+        VbbAlertStopReference(alert_id="a", selector_index=1, stop_id="missing"),
+        VbbAlertStopReference(alert_id="b", selector_index=0, stop_id="de:1"),
+    )
+    matches = load(archive()).resolve_alert_stop_references(references)
+
+    assert tuple(match.reference for match in matches) == references
+    assert matches[0].location is not None
+    assert matches[1].location is None
+    assert matches[2].location == matches[0].location
 
 
 def test_stored_zip_is_supported_without_filesystem_extraction() -> None:
