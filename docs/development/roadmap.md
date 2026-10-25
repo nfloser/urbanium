@@ -17,7 +17,7 @@ The GitHub issues are the executable roadmap. Dependencies are intentional; date
 
 ## P2: prove cross-domain value
 
-- **#8 First evidence-backed cross-domain demonstrator** — depends on #4, #5 and #7. Provider evidence-to-component input conversion (#29) and a deterministic weather/transport source-readiness snapshot (#31) establish a bounded synthetic integration path. A defensible real-data impact analysis, temporal/spatial alignment and an operational decision rule remain outstanding; the readiness snapshot does not close #8.
+- **#8 First evidence-backed cross-domain demonstrator** — depends on #4, #5 and #7. Provider evidence-to-component input conversion (#29) and a deterministic weather/transport source-readiness snapshot (#31) establish a bounded synthetic integration path. A descriptive nearest-observation timestamp gap (#37) is a first diagnostic, not temporal alignment. A defensible real-data impact analysis, temporal/spatial alignment and an operational decision rule remain outstanding; the readiness snapshot does not close #8.
 
 ## Planned sequence
 
