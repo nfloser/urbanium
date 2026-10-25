@@ -136,7 +136,9 @@ def test_clock_is_sampled_after_download() -> None:
         return NOW
 
     config = DwdAirTemperatureConfig(
-        city_id="berlin", source_id="dwd_open_data", station_id="00433",
+        city_id="berlin",
+        source_id="dwd_open_data",
+        station_id="00433",
         station_name="Berlin-Tempelhof",
     )
     result = DwdCdcStationLocationProvider(config, fetcher=fetcher, clock=clock).read()
