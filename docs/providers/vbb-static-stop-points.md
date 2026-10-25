@@ -32,7 +32,9 @@ inventory = VbbGtfsStaticStopInventory(
     stops_txt=stops_txt,
     retrieved_at=datetime(2026, 10, 25, 13, tzinfo=UTC),
 )
-references = (VbbAlertStopReference(alert_id="example-alert", selector_index=0, stop_id="example:1"),)
+references = (
+    VbbAlertStopReference(alert_id="example-alert", selector_index=0, stop_id="example:1"),
+)
 matches = inventory.resolve_alert_stop_references(references)
 assert matches[0].reference == references[0]
 assert matches[0].location is not None
