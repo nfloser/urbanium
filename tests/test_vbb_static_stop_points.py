@@ -22,11 +22,7 @@ from urbanium.providers.vbb.static_stops import (
 
 NOW = datetime(2026, 10, 25, 13, tzinfo=UTC)
 HEADER = "stop_id,stop_name,stop_lat,stop_lon,location_type\n"
-STOPS = (
-    HEADER
-    + '"de:stop/1","Stop, with comma",52.5001,13.4002,0\n'
-    + "de:stop/2,Other stop,,,1\n"
-)
+STOPS = HEADER + '"de:stop/1","Stop, with comma",52.5001,13.4002,0\n' + "de:stop/2,Other stop,,,1\n"
 
 
 def inventory(
@@ -78,7 +74,6 @@ def test_alert_lookup_preserves_order_duplicates_and_missing_ids() -> None:
     assert matches[3].location is None
 
 
-
 def test_realtime_alert_stop_reference_resolves_without_route_inference() -> None:
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.header.gtfs_realtime_version = "2.0"
@@ -106,6 +101,7 @@ def test_realtime_alert_stop_reference_resolves_without_route_inference() -> Non
     assert matches[0].reference.selector_index == 1
     assert matches[0].location is not None
     assert matches[0].location.point.latitude == 52.5001
+
 
 def test_absent_ids_and_stops_without_coordinates_stay_unresolved() -> None:
     source = inventory()
@@ -157,9 +153,7 @@ def test_naive_retrieval_time_is_rejected() -> None:
 
 def test_inventory_digest_changes_with_source_bytes() -> None:
     first = inventory().resolve("de:stop/1")
-    second = inventory((STOPS + "third,Third,52.6,13.5,0\n").encode()).resolve(
-        "de:stop/1"
-    )
+    second = inventory((STOPS + "third,Third,52.6,13.5,0\n").encode()).resolve("de:stop/1")
 
     assert first is not None and second is not None
     assert first.entity == second.entity
