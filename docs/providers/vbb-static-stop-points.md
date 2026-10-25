@@ -6,13 +6,13 @@ GTFS static `stops.txt` inventory and return source-backed WGS84 point
 assertions where coordinates exist. The lookup does not interpret the
 rest of an Alert selector or assert that a stop is disrupted.
 
-`VbbGtfsStaticStopInventory` is deliberately offline: it does not
-download a GTFS ZIP, select an upstream feed, infer the correct static
-version or assume that static and realtime IDs share a namespace. A
-consumer must obtain the original licensed dataset, extract `stops.txt`
-safely, record the actual retrieval time, retain the source bytes when
-reproducibility is required, and verify that the static feed's publisher,
-coverage and ID version are compatible with the GTFS-Realtime feed.
+The inventory reader is deliberately offline: it does not download a
+GTFS ZIP, select an upstream feed, infer the correct static version or
+assume that static and realtime IDs share a namespace. A consumer must
+obtain the original licensed dataset, record its actual retrieval time,
+retain source bytes when reproducibility is required, and verify that
+the static feed's publisher, coverage and ID version are compatible
+with the GTFS-Realtime feed.
 
 ## Synthetic example
 
@@ -48,9 +48,53 @@ All original Alert IDs, selector positions, ordering and repeated
 references are retained. An unknown ID or an inventory record with
 both coordinates missing produces `location=None`.
 
+## Using a supplied GTFS ZIP release
+
+A caller can supply the **original ZIP bytes** instead of manually
+extracting `stops.txt`:
+
+```python
+from datetime import UTC, datetime
+from pathlib import Path
+
+from urbanium.providers.vbb.static_stops import (
+    VbbGtfsStaticStopConfig,
+    VbbGtfsStaticStopInventory,
+)
+
+# Obtain this file separately under the publisher's applicable terms.
+archive_bytes = Path("licensed-gtfs-release.zip").read_bytes()
+inventory = VbbGtfsStaticStopInventory.from_gtfs_zip(
+    VbbGtfsStaticStopConfig(city_id="berlin", source_id="vbb_gtfs_static"),
+    archive_bytes=archive_bytes,
+    retrieved_at=datetime.now(UTC),  # record the actual acquisition time
+)
+print(inventory.archive_sha256)  # release fingerprint, not a version assertion
+```
+
+The reader opens the ZIP **in memory** and reads only the single
+root-level `stops.txt`; it never extracts files to disk. It rejects
+missing or duplicate root entries, invalid ZIPs, encrypted members,
+unsupported compression, archives larger than **100 MB**, archives
+with more than **128 members**, and `stops.txt` larger than **20 MB**
+(including when compressed). It accepts stored and deflated ZIP members.
+Other files in the archive are not parsed or semantically validated.
+
+Resolved point evidence includes both the original `stops.txt`
+SHA-256 and the entire ZIP SHA-256. This identifies the exact supplied
+release bytes even when two releases have identical stop coordinates.
+The direct `stops_txt=` constructor remains supported and retains its
+existing record-ID format; its `archive_sha256` is `None`.
+
+The digest alone does not establish the official release identity,
+licence, effective dates or compatibility with a GTFS-Realtime feed.
+Callers must record that metadata and check ID-namespace compatibility
+before using stop references. An offline archive lookup cannot verify
+that a realtime Alert actually affects the named stop.
+
 ## Parsing and provenance
 
-The reader accepts at most 20 MB of UTF-8 (optional BOM) CSV, including
+The `stops.txt` parser accepts at most 20 MB of UTF-8 (optional BOM) CSV, including
 quoted fields. It requires `stop_id`, `stop_lat` and `stop_lon`.
 Duplicate IDs, missing required columns, malformed rows, invalid
 `location_type`, partial coordinate pairs, nonfinite or out-of-range
@@ -61,7 +105,7 @@ return a point: invalid inventories do not yield partial results.
 Resolved points use `EntityPointLocation` in the `reference` state,
 with the configured city/source, a source retrieval timestamp and an
 evidence record ID containing SHA-256 hashes of both the raw stop ID and
-the complete `stops.txt` bytes. Hashing the raw ID gives a stable
+the complete `stops.txt` bytes (and the ZIP bytes when provided). Hashing the raw ID gives a stable
 canonical entity ID even when the GTFS identifier contains punctuation.
 The original ID remains on the corresponding `VbbAlertStopReference`.
 The hash is a fingerprint, **not** a stored copy of the inventory or a
@@ -85,5 +129,5 @@ and current terms should be checked with the
 [VBB datasets page](https://unternehmen.vbb.de/digitale-services/datensaetze/)
 before using or redistributing any static GTFS files.
 
-Deterministic tests use synthetic `stops.txt` bytes. No static-feed
+Deterministic tests use synthetic `stops.txt` and ZIP bytes. No static-feed
 network request is made by the reader or by CI.
