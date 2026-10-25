@@ -133,9 +133,7 @@ def test_receipt_clock_is_sampled_after_the_archive_download() -> None:
         assert download_finished, "receipt time must follow the network download"
         return NOW
 
-    subject = DwdCdcAirTemperatureProvider(
-        provider().config, fetcher=fetcher, clock=clock
-    )
+    subject = DwdCdcAirTemperatureProvider(provider().config, fetcher=fetcher, clock=clock)
 
     result = subject.read()
 
@@ -164,9 +162,7 @@ def test_archive_updated_during_download_keeps_its_latest_valid_observation() ->
     def clock() -> datetime:
         return download_completed if download_finished else request_started
 
-    subject = DwdCdcAirTemperatureProvider(
-        provider().config, fetcher=fetcher, clock=clock
-    )
+    subject = DwdCdcAirTemperatureProvider(provider().config, fetcher=fetcher, clock=clock)
 
     result = subject.read()
 
