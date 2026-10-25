@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from hashlib import sha256
 from io import BytesIO
-from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
+from zipfile import ZIP_BZIP2, ZIP_DEFLATED, ZIP_STORED, ZipFile
 
 import pytest
 
@@ -66,6 +66,19 @@ def test_identical_stops_in_different_releases_retain_distinct_provenance() -> N
 
 def test_stored_zip_is_supported_without_filesystem_extraction() -> None:
     assert load(archive(compression=ZIP_STORED)).resolve("de:1") is not None
+
+
+def test_direct_stops_input_retains_its_original_provenance_shape() -> None:
+    direct = VbbGtfsStaticStopInventory(CONFIG, stops_txt=STOPS, retrieved_at=NOW)
+    assert direct.archive_sha256 is None
+    point = direct.resolve("de:1")
+    assert point is not None
+    assert point.evidence[0].record_id.endswith(sha256(STOPS).hexdigest())
+
+
+def test_unsupported_member_compression_is_rejected() -> None:
+    with pytest.raises(VbbGtfsStaticStopError, match="compression"):
+        load(archive(compression=ZIP_BZIP2))
 
 
 @pytest.mark.parametrize(
