@@ -15,6 +15,7 @@ The documentation distinguishes implemented platform features from planned work.
 - [DWD CDC air-temperature adapter](providers/dwd-air-temperature.md)
 - [DWD station inventory point reader](providers/dwd-station-locations.md)
 - [VBB GTFS-Realtime operational alert adapter](providers/vbb-gtfs-realtime.md)
+- [Source-backed GTFS static stop point lookup](providers/vbb-static-stop-points.md)
 - [Berlin and Mainz reference deployments](cities/reference-deployments.md)
 - [Add a city](cities/add-a-city.md)
 - [Reference architecture analysis](research/reference-architectures.md)

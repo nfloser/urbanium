@@ -50,6 +50,12 @@ would be needed before considering spatial joins with DWD station points.
 An empty tuple does not mean that no service alerts exist: alerts may
 target routes, trips or agencies without naming a stop.
 
+The optional [offline GTFS static stop lookup](vbb-static-stop-points.md)
+can resolve **exact** referenced IDs to source-backed points when a
+consumer supplies a licensed, version-compatible `stops.txt` inventory.
+It does not interpret route/trip qualifications or turn a match into an
+impact claim.
+
 ## Time and freshness
 
 When the optional GTFS-Realtime feed-header timestamp is present, it becomes `observed_at`. Freshness is assessed against the configured threshold, currently five minutes.
