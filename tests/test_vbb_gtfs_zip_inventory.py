@@ -94,6 +94,22 @@ def test_direct_stops_input_retains_its_original_provenance_shape() -> None:
     assert point.evidence[0].record_id.endswith(sha256(STOPS).hexdigest())
 
 
+def test_header_only_stops_are_rejected_from_direct_and_zip_inputs() -> None:
+    header_only = b"stop_id,stop_lat,stop_lon\n"
+    with pytest.raises(VbbGtfsStaticStopError, match="no stop records"):
+        VbbGtfsStaticStopInventory(CONFIG, stops_txt=header_only, retrieved_at=NOW)
+    with pytest.raises(VbbGtfsStaticStopError, match="no stop records"):
+        load(archive((("stops.txt", header_only),)))
+
+
+def test_inventory_with_only_missing_coordinates_is_still_valid() -> None:
+    without_points = b"stop_id,stop_lat,stop_lon\nde:1,,\nde:2,,\n"
+    direct = VbbGtfsStaticStopInventory(CONFIG, stops_txt=without_points, retrieved_at=NOW)
+    zipped = load(archive((("stops.txt", without_points),)))
+    assert direct.resolve("de:1") is None
+    assert zipped.resolve("de:2") is None
+
+
 def test_unsupported_member_compression_is_rejected() -> None:
     with pytest.raises(VbbGtfsStaticStopError, match="compression"):
         load(archive(compression=ZIP_BZIP2))

@@ -231,6 +231,8 @@ def _parse_stops(payload: bytes) -> dict[str, Wgs84Point | None]:
             else:
                 point = None
             points[stop_id] = point
+        if not points:
+            raise VbbGtfsStaticStopError("GTFS stops.txt has no stop records")
         return points
     except (UnicodeDecodeError, csv.Error) as exc:
         raise VbbGtfsStaticStopError("malformed GTFS stops.txt encoding or CSV") from exc
