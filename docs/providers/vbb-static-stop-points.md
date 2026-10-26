@@ -98,11 +98,14 @@ that a realtime Alert actually affects the named stop.
 
 The `stops.txt` parser accepts at most 20 MB of UTF-8 (optional BOM) CSV, including
 quoted fields. It requires `stop_id`, `stop_lat` and `stop_lon`.
-Duplicate IDs, missing required columns, malformed rows, invalid
-`location_type`, partial coordinate pairs, nonfinite or out-of-range
-coordinates, invalid encoding and oversized inputs raise
-`VbbGtfsStaticStopError`. Parsing completes before any lookup can
-return a point: invalid inventories do not yield partial results.
+Duplicate IDs, missing required columns, **header-only files with no stop records**,
+malformed rows, invalid `location_type`, partial coordinate pairs,
+nonfinite or out-of-range coordinates, invalid encoding and oversized inputs
+raise `VbbGtfsStaticStopError`. A nonempty inventory whose stops all lack
+coordinates is still accepted, but those IDs resolve to `None` rather than
+invented points. The same validation applies to direct `stops_txt` input and
+ZIP releases. Parsing completes before any lookup can return a point: invalid
+inventories do not yield partial results.
 
 Resolved points use `EntityPointLocation` in the `reference` state,
 with the configured city/source, a source retrieval timestamp and an
