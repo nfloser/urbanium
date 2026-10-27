@@ -20,6 +20,7 @@ DWD_STATION_LIST_URL = (
 )
 STATION_LIST_FILENAME = "zehn_min_tu_Beschreibung_Stationen.txt"
 MAX_STATION_LIST_BYTES = 1_000_000
+_COORDINATE_PATTERN = r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?"
 FetchBytes = Callable[[str, float], bytes]
 Clock = Callable[[], datetime]
 
@@ -95,6 +96,8 @@ class DwdCdcStationLocationProvider:
             end = datetime.strptime(columns[2], "%Y%m%d")
             if begin > end:
                 raise ValueError("reversed station coverage dates")
+            if not all(fullmatch(_COORDINATE_PATTERN, value) for value in columns[4:6]):
+                raise ValueError("invalid station coordinate syntax")
             point = Wgs84Point(latitude=float(columns[4]), longitude=float(columns[5]))
         except (ValueError, ValidationError) as exc:
             raise DwdStationMetadataError("invalid DWD station inventory record") from exc
