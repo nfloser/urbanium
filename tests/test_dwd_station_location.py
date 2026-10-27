@@ -79,6 +79,12 @@ def test_berlin_and_mainz_use_same_inventory_parser_without_shared_identity() ->
     assert berlin.point == mainz.point  # Synthetic shared coordinates do not imply coverage.
 
 
+@pytest.mark.parametrize("payload", [HEADER.splitlines()[0] + "\n", HEADER, HEADER + "\n  \n"])
+def test_empty_inventory_is_not_mistaken_for_missing_station(payload: str) -> None:
+    with pytest.raises(DwdStationMetadataError, match="no station records"):
+        subject(payload.encode("latin-1")).read()
+
+
 def test_station_not_in_inventory_remains_missing() -> None:
     assert subject((HEADER + station_row("03137")).encode("latin-1")).read() is None
 
