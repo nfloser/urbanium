@@ -35,6 +35,11 @@ coordinates, invalid inventory headers and oversized responses raise
 `DwdStationMetadataError`. Consumers must treat these failures as missing
 evidence, **not** replace them with guessed positions.
 
+Coordinate tokens must use ASCII decimal syntax; Python-only numeric spellings
+such as `5_2` and non-ASCII digits are not accepted. Finite, in-range signed
+values and scientific notation remain valid. This is format validation, not
+verification of a station's reported position.
+
 The retrieval clock is sampled after the download. The source record ID
 contains the inventory filename, station ID and SHA-256 digest of the fetched
 inventory bytes, while the evidence carries the retrieval instant. This

@@ -96,12 +96,24 @@ def test_station_not_in_inventory_remains_missing() -> None:
         "00433 broken\n",
         station_row(latitude="91"),
         station_row(longitude="nan"),
+        station_row(latitude="5_2"),
+        station_row(longitude="1_3.4"),
         "00433 20261231 20260101 48 52.0 13.0 Example Berlin\n",
     ],
 )
 def test_invalid_or_ambiguous_target_station_is_rejected(rows: str) -> None:
     with pytest.raises(DwdStationMetadataError):
         subject((HEADER + rows).encode("latin-1")).read()
+
+
+def test_ascii_signed_and_exponent_coordinates_remain_valid() -> None:
+    result = subject(
+        (HEADER + station_row(latitude="+52.4675", longitude="1.34021e1")).encode("latin-1")
+    ).read()
+
+    assert result is not None
+    assert result.point.latitude == 52.4675
+    assert result.point.longitude == 13.4021
 
 
 def test_invalid_inventory_header_is_not_mistaken_for_missing_station() -> None:
