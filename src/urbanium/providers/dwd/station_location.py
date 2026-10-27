@@ -67,9 +67,17 @@ class DwdCdcStationLocationProvider:
         ):
             raise DwdStationMetadataError("unexpected DWD station inventory header")
 
+        records = [
+            line
+            for line in lines[1:]
+            if line.strip() and not all(char in "- " for char in line.strip())
+        ]
+        if not records:
+            raise DwdStationMetadataError("DWD station inventory has no station records")
+
         matches = [
             line.split(maxsplit=6)
-            for line in lines[1:]
+            for line in records
             if line.split(maxsplit=1)[:1] == [self.config.station_id]
         ]
         if not matches:

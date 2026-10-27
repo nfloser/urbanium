@@ -75,3 +75,6 @@ URBANIUM_LIVE_DWD_STATIONS=1 pytest tests/live/test_dwd_station_location_live.py
 
 DWD's dataset is distributed under CC BY 4.0; downstream redistribution
 must preserve attribution and applicable licence notices.
+
+An inventory containing only the header, separator or blank lines is rejected as
+invalid metadata; it does not establish that the configured station is absent.
