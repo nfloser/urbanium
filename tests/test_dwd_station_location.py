@@ -124,9 +124,12 @@ def test_invalid_inventory_header_is_not_mistaken_for_missing_station() -> None:
 @pytest.mark.parametrize(
     "header",
     [
-        "prefix_stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge Stationsname Bundesland\n",
-        "Stations_id von_datum bis_datum geoBreite Stationshoehe geoLaenge Stationsname Bundesland\n",
-        "Stations_id von_datum bis_datum Stationshoehe geoLaenge geoBreite Stationsname Bundesland\n",
+        "prefix_stations_id von_datum bis_datum Stationshoehe "
+        "geoBreite geoLaenge Stationsname Bundesland\n",
+        "Stations_id von_datum bis_datum geoBreite Stationshoehe "
+        "geoLaenge Stationsname Bundesland\n",
+        "Stations_id von_datum bis_datum Stationshoehe geoLaenge "
+        "geoBreite Stationsname Bundesland\n",
     ],
 )
 def test_station_header_must_match_positional_fields(header: str) -> None:
