@@ -35,6 +35,11 @@ coordinates, invalid inventory headers and oversized responses raise
 `DwdStationMetadataError`. Consumers must treat these failures as missing
 evidence, **not** replace them with guessed positions.
 
+The first six header fields must name the positional columns in order:
+`Stations_id`, `von_datum`, `bis_datum`, `Stationshoehe`, `geoBreite`
+and `geoLaenge` (case-insensitively). Substring matches and reordered
+columns are rejected rather than risking misattributed coordinates.
+
 Coordinate tokens must use ASCII decimal syntax; Python-only numeric spellings
 such as `5_2` and non-ASCII digits are not accepted. Finite, in-range signed
 values and scientific notation remain valid. This is format validation, not
