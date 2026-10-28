@@ -63,9 +63,15 @@ class DwdCdcStationLocationProvider:
             raise DwdStationMetadataError("inventory clock must be timezone-aware")
 
         lines = payload.decode("latin-1").splitlines()
-        if not lines or not all(
-            key in lines[0].lower() for key in ("stations_id", "geobreite", "geolaenge")
-        ):
+        header_fields = lines[0].casefold().split() if lines else []
+        if header_fields[:6] != [
+            "stations_id",
+            "von_datum",
+            "bis_datum",
+            "stationshoehe",
+            "geobreite",
+            "geolaenge",
+        ]:
             raise DwdStationMetadataError("unexpected DWD station inventory header")
 
         records = [
