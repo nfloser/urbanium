@@ -121,6 +121,22 @@ def test_invalid_inventory_header_is_not_mistaken_for_missing_station() -> None:
         subject(b"unrecognized source file\n").read()
 
 
+@pytest.mark.parametrize(
+    "header",
+    [
+        "prefix_stations_id von_datum bis_datum Stationshoehe "
+        "geoBreite geoLaenge Stationsname Bundesland\n",
+        "Stations_id von_datum bis_datum geoBreite Stationshoehe "
+        "geoLaenge Stationsname Bundesland\n",
+        "Stations_id von_datum bis_datum Stationshoehe geoLaenge "
+        "geoBreite Stationsname Bundesland\n",
+    ],
+)
+def test_station_header_must_match_positional_fields(header: str) -> None:
+    with pytest.raises(DwdStationMetadataError, match="header"):
+        subject((header + station_row()).encode("latin-1")).read()
+
+
 def test_oversized_inventory_is_rejected() -> None:
     with pytest.raises(DwdStationMetadataError, match="size"):
         subject(b"x" * 1_000_001).read()
