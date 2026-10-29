@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from urbanium.providers.vbb.gtfs_rt import VbbAlertStopReference
 
 MAX_STOPS_TXT_BYTES = 20_000_000
+MAX_FEED_INFO_BYTES = 64_000
 MAX_GTFS_ZIP_BYTES = 100_000_000
 MAX_GTFS_ZIP_MEMBERS = 128
 _REQUIRED_COLUMNS = {"stop_id", "stop_lat", "stop_lon"}
@@ -77,6 +78,7 @@ class VbbGtfsStaticStopInventory:
         self.retrieved_at = retrieved_at
         self._digest = sha256(stops_txt).hexdigest()
         self._archive_digest: str | None = None
+        self._feed_version: str | None = None
         self._points = _parse_stops(stops_txt)
 
     @classmethod
@@ -118,6 +120,22 @@ class VbbGtfsStaticStopInventory:
                     stops_txt = stop_stream.read(MAX_STOPS_TXT_BYTES + 1)
                 if len(stops_txt) > MAX_STOPS_TXT_BYTES:
                     raise VbbGtfsStaticStopError("GTFS stops.txt exceeds size limit")
+
+                feed_info_matches = [
+                    member
+                    for member in members
+                    if member.filename == "feed_info.txt" and not member.is_dir()
+                ]
+                if len(feed_info_matches) > 1:
+                    raise VbbGtfsStaticStopError("duplicate GTFS feed_info.txt")
+                feed_info: bytes | None = None
+                if feed_info_matches:
+                    if feed_info_matches[0].file_size > MAX_FEED_INFO_BYTES:
+                        raise VbbGtfsStaticStopError("GTFS feed_info.txt exceeds size limit")
+                    with archive.open(feed_info_matches[0]) as feed_info_stream:
+                        feed_info = feed_info_stream.read(MAX_FEED_INFO_BYTES + 1)
+                    if len(feed_info) > MAX_FEED_INFO_BYTES:
+                        raise VbbGtfsStaticStopError("GTFS feed_info.txt exceeds size limit")
         except VbbGtfsStaticStopError:
             raise
         except (
@@ -136,7 +154,15 @@ class VbbGtfsStaticStopInventory:
 
         inventory = cls(config, stops_txt=stops_txt, retrieved_at=retrieved_at)
         inventory._archive_digest = sha256(archive_bytes).hexdigest()
+        if feed_info is not None:
+            inventory._feed_version = _parse_feed_version(feed_info)
         return inventory
+
+    @property
+    def feed_version(self) -> str | None:
+        """Unverified feed_info.txt version label, not proof of feed compatibility."""
+
+        return self._feed_version
 
     @property
     def archive_sha256(self) -> str | None:
@@ -236,3 +262,28 @@ def _parse_stops(payload: bytes) -> dict[str, Wgs84Point | None]:
         return points
     except (UnicodeDecodeError, csv.Error) as exc:
         raise VbbGtfsStaticStopError("malformed GTFS stops.txt encoding or CSV") from exc
+
+
+def _parse_feed_version(payload: bytes) -> str | None:
+    """Read only the optional release label, not the full GTFS feed_info contract."""
+
+    try:
+        reader = csv.DictReader(StringIO(payload.decode("utf-8-sig"), newline=""), strict=True)
+        fields = reader.fieldnames
+        if fields is None or not all(fields) or len(fields) != len(set(fields)):
+            raise VbbGtfsStaticStopError("invalid GTFS feed_info.txt header")
+
+        rows = list(reader)
+        if len(rows) != 1 or any(
+            None in row or any(value is None for value in row.values()) for row in rows
+        ):
+            raise VbbGtfsStaticStopError("invalid GTFS feed_info.txt row")
+
+        version = rows[0].get("feed_version")
+        if version is None or not version.strip():
+            return None
+        if any(char in version for char in ("\\x00", "\\r", "\\n", "\\t")):
+            raise VbbGtfsStaticStopError("invalid GTFS feed_version")
+        return version
+    except (UnicodeDecodeError, csv.Error) as exc:
+        raise VbbGtfsStaticStopError("malformed GTFS feed_info.txt encoding or CSV") from exc
