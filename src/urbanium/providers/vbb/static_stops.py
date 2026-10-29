@@ -89,7 +89,7 @@ class VbbGtfsStaticStopInventory:
         archive_bytes: bytes,
         retrieved_at: datetime,
     ) -> VbbGtfsStaticStopInventory:
-        """Read root stops.txt from a bounded supplied ZIP without extracting files."""
+        """Read bounded stop and optional feed metadata from a supplied ZIP in memory."""
 
         if len(archive_bytes) > MAX_GTFS_ZIP_BYTES:
             raise VbbGtfsStaticStopError("GTFS ZIP archive exceeds size limit")
@@ -279,7 +279,7 @@ def _parse_feed_version(payload: bytes) -> str | None:
         ):
             raise VbbGtfsStaticStopError("invalid GTFS feed_info.txt row")
 
-        version = rows[0].get("feed_version")
+        version = cast(str | None, rows[0].get("feed_version"))
         if version is None or not version.strip():
             return None
         if any(ord(char) in (0, 9, 10, 13) for char in version):
