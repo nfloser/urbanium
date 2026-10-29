@@ -164,3 +164,71 @@ def test_encrypted_member_is_rejected_even_if_unrelated_to_stops() -> None:
     payload[second + 8] |= 1
     with pytest.raises(VbbGtfsStaticStopError, match="encrypted"):
         load(bytes(payload))
+
+
+FEED_INFO = (
+    b"feed_publisher_name,feed_publisher_url,feed_lang,feed_version\n"
+    b"Example,https://example.test,de,2026-10-29\n"
+)
+
+
+def test_zip_exposes_declared_feed_version_without_changing_stop_identity() -> None:
+    plain = load(archive())
+    versioned_bytes = archive((("stops.txt", STOPS), ("feed_info.txt", FEED_INFO)))
+    versioned = load(versioned_bytes)
+
+    assert plain.feed_version is None
+    assert versioned.feed_version == "2026-10-29"
+    plain_point = plain.resolve("de:1")
+    versioned_point = versioned.resolve("de:1")
+    assert plain_point is not None and versioned_point is not None
+    assert plain_point.entity == versioned_point.entity
+    assert plain_point.point == versioned_point.point
+    assert versioned_point.evidence[0].record_id.endswith(
+        f":gtfs.zip:{sha256(versioned_bytes).hexdigest()}"
+    )
+
+
+def test_feed_version_is_optional_for_direct_and_zip_inputs() -> None:
+    direct = VbbGtfsStaticStopInventory(CONFIG, stops_txt=STOPS, retrieved_at=NOW)
+    without_version = b"feed_publisher_name,feed_lang\nExample,de\n"
+    blank_version = b"feed_version\n  \n"
+
+    assert direct.feed_version is None
+    assert load(archive((("stops.txt", STOPS),))).feed_version is None
+    no_label = load(archive((("stops.txt", STOPS), ("feed_info.txt", without_version))))
+    assert no_label.feed_version is None
+    blank_label = load(archive((("stops.txt", STOPS), ("feed_info.txt", blank_version))))
+    assert blank_label.feed_version is None
+
+
+def test_duplicate_root_feed_info_is_rejected() -> None:
+    with pytest.raises(VbbGtfsStaticStopError, match="feed_info"):
+        load(
+            archive(
+                (("stops.txt", STOPS), ("feed_info.txt", FEED_INFO), ("feed_info.txt", FEED_INFO))
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    "feed_info",
+    [
+        b"feed_version\n",
+        b"feed_version,feed_version\nv1,v2\n",
+        b"feed_version\nv1\nv2\n",
+        b"feed_version\n\xff\n",
+        b'feed_version\n"unterminated\n',
+        b"feed_version\nv1,extra\n",
+        b'feed_version\n"v1\nbad"\n',
+    ],
+)
+def test_malformed_feed_info_cannot_claim_a_release_version(feed_info: bytes) -> None:
+    with pytest.raises(VbbGtfsStaticStopError, match="feed_info|feed_version"):
+        load(archive((("stops.txt", STOPS), ("feed_info.txt", feed_info))))
+
+
+def test_feed_info_decompression_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("urbanium.providers.vbb.static_stops.MAX_FEED_INFO_BYTES", 32)
+    with pytest.raises(VbbGtfsStaticStopError, match="feed_info.*size"):
+        load(archive((("stops.txt", STOPS), ("feed_info.txt", FEED_INFO))))
