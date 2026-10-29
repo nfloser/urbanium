@@ -71,22 +71,42 @@ inventory = VbbGtfsStaticStopInventory.from_gtfs_zip(
     archive_bytes=archive_bytes,
     retrieved_at=datetime.now(UTC),  # record the actual acquisition time
 )
-print(inventory.archive_sha256)  # release fingerprint, not a version assertion
+print(inventory.archive_sha256)  # exact archive bytes, not a publisher release label
+print(inventory.feed_version)  # optional unverified feed_info.txt label
 ```
 
-The reader opens the ZIP **in memory** and reads only the single
-root-level `stops.txt`; it never extracts files to disk. It rejects
-missing or duplicate root entries, invalid ZIPs, encrypted members,
-unsupported compression, archives larger than **100 MB**, archives
-with more than **128 members**, and `stops.txt` larger than **20 MB**
-(including when compressed). It accepts stored and deflated ZIP members.
-Other files in the archive are not parsed or semantically validated.
+The reader opens the ZIP **in memory** and reads the single root-level
+`stops.txt` plus optional root-level `feed_info.txt`; it never extracts
+files to disk. It rejects missing or duplicate root stop entries,
+invalid ZIPs, encrypted members, unsupported compression, archives
+larger than **100 MB**, archives with more than **128 members**,
+`stops.txt` larger than **20 MB**, and `feed_info.txt` larger than
+**64 KB** (including when compressed). It accepts stored and deflated
+ZIP members. Other files are not parsed or semantically validated.
 
 Resolved point evidence includes both the original `stops.txt`
 SHA-256 and the entire ZIP SHA-256. This identifies the exact supplied
 release bytes even when two releases have identical stop coordinates.
 The direct `stops_txt=` constructor remains supported and retains its
-existing record-ID format; its `archive_sha256` is `None`.
+existing record-ID format; its `archive_sha256` and `feed_version` are `None`.
+
+## Optional publisher-declared version
+
+When a supplied ZIP includes exactly one root `feed_info.txt`, Urbanium
+reads its optional `feed_version` CSV column. A single valid record
+with a nonblank value yields that exact source string; absent files,
+missing columns and blank values yield `None`. Duplicate root
+`feed_info.txt` entries, malformed CSV/UTF-8, ambiguous rows and
+control characters in a declared version are rejected. The reader
+does **not** validate the publisher fields or the full GTFS Schedule
+metadata contract.
+
+The value is a publisher-supplied label, not a trusted publication date,
+an authenticated version, or proof of compatibility with VBB GTFS-RT.
+It is not incorporated into canonical stop identity: the original ZIP
+SHA-256 already binds the evidence to exact archive bytes. Consult the
+[GTFS Schedule `feed_info.txt` specification](https://gtfs.org/documentation/schedule/reference/#feed_infotxt)
+for the upstream field meaning.
 
 The digest alone does not establish the official release identity,
 licence, effective dates or compatibility with a GTFS-Realtime feed.
