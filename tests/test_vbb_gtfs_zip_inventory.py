@@ -196,13 +196,17 @@ def test_feed_version_is_optional_for_direct_and_zip_inputs() -> None:
 
     assert direct.feed_version is None
     assert load(archive((("stops.txt", STOPS),))).feed_version is None
-    assert load(archive((("stops.txt", STOPS), ("feed_info.txt", without_version)))).feed_version is None
-    assert load(archive((("stops.txt", STOPS), ("feed_info.txt", blank_version)))).feed_version is None
+    no_label = load(archive((("stops.txt", STOPS), ("feed_info.txt", without_version))))
+    assert no_label.feed_version is None
+    blank_label = load(archive((("stops.txt", STOPS), ("feed_info.txt", blank_version))))
+    assert blank_label.feed_version is None
 
 
 def test_duplicate_root_feed_info_is_rejected() -> None:
     with pytest.raises(VbbGtfsStaticStopError, match="feed_info"):
-        load(archive((("stops.txt", STOPS), ("feed_info.txt", FEED_INFO), ("feed_info.txt", FEED_INFO))))
+        load(
+            archive((("stops.txt", STOPS), ("feed_info.txt", FEED_INFO), ("feed_info.txt", FEED_INFO)))
+        )
 
 
 @pytest.mark.parametrize(
