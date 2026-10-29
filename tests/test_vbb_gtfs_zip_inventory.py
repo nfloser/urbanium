@@ -205,7 +205,9 @@ def test_feed_version_is_optional_for_direct_and_zip_inputs() -> None:
 def test_duplicate_root_feed_info_is_rejected() -> None:
     with pytest.raises(VbbGtfsStaticStopError, match="feed_info"):
         load(
-            archive((("stops.txt", STOPS), ("feed_info.txt", FEED_INFO), ("feed_info.txt", FEED_INFO)))
+            archive(
+                (("stops.txt", STOPS), ("feed_info.txt", FEED_INFO), ("feed_info.txt", FEED_INFO))
+            )
         )
 
 
