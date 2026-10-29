@@ -282,7 +282,7 @@ def _parse_feed_version(payload: bytes) -> str | None:
         version = rows[0].get("feed_version")
         if version is None or not version.strip():
             return None
-        if any(char in version for char in ("\\x00", "\\r", "\\n", "\\t")):
+        if any(ord(char) in (0, 9, 10, 13) for char in version):
             raise VbbGtfsStaticStopError("invalid GTFS feed_version")
         return version
     except (UnicodeDecodeError, csv.Error) as exc:
