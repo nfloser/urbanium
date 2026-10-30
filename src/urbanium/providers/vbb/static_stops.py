@@ -13,6 +13,7 @@ from hashlib import sha256
 from io import BytesIO, StringIO
 from re import fullmatch
 from typing import TYPE_CHECKING, cast
+from unicodedata import category
 from zipfile import ZIP_DEFLATED, ZIP_STORED, BadZipFile, LargeZipFile, ZipFile
 from zlib import error as ZlibError
 
@@ -282,7 +283,7 @@ def _parse_feed_version(payload: bytes) -> str | None:
         version = cast(str | None, rows[0].get("feed_version"))
         if version is None or not version.strip():
             return None
-        if any(ord(char) in (0, 9, 10, 13) for char in version):
+        if any(category(char) == "Cc" for char in version):
             raise VbbGtfsStaticStopError("invalid GTFS feed_version")
         return version
     except (UnicodeDecodeError, csv.Error) as exc:

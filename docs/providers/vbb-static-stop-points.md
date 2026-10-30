@@ -97,7 +97,9 @@ reads its optional `feed_version` CSV column. A single valid record
 with a nonblank value yields that exact source string; absent files,
 missing columns and blank values yield `None`. Duplicate root
 `feed_info.txt` entries, malformed CSV/UTF-8, ambiguous rows and
-control characters in a declared version are rejected. The reader
+Unicode control characters (category `Cc`, including DEL and C1 controls)
+in a declared version are rejected; printable non-ASCII labels are retained
+verbatim. The reader
 does **not** validate the publisher fields or the full GTFS Schedule
 metadata contract.
 
