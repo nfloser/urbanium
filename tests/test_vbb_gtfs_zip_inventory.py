@@ -203,7 +203,7 @@ def test_feed_version_is_optional_for_direct_and_zip_inputs() -> None:
 
 
 def test_printable_unicode_feed_version_is_preserved() -> None:
-    metadata = "feed_version\nrelease-Ä\n".encode("utf-8")
+    metadata = "feed_version\nrelease-Ä\n".encode()
     source = load(archive((("stops.txt", STOPS), ("feed_info.txt", metadata))))
 
     assert source.feed_version == "release-Ä"
