@@ -202,6 +202,13 @@ def test_feed_version_is_optional_for_direct_and_zip_inputs() -> None:
     assert blank_label.feed_version is None
 
 
+def test_printable_unicode_feed_version_is_preserved() -> None:
+    metadata = "feed_version\\nrelease-Ä\\n".encode("utf-8")
+    source = load(archive((("stops.txt", STOPS), ("feed_info.txt", metadata))))
+
+    assert source.feed_version == "release-Ä"
+
+
 def test_duplicate_root_feed_info_is_rejected() -> None:
     with pytest.raises(VbbGtfsStaticStopError, match="feed_info"):
         load(
@@ -221,6 +228,9 @@ def test_duplicate_root_feed_info_is_rejected() -> None:
         b'feed_version\n"unterminated\n',
         b"feed_version\nv1,extra\n",
         b'feed_version\n"v1\nbad"\n',
+        b"feed_version\nv1\x01\n",
+        b"feed_version\nv1\x7f\n",
+        b"feed_version\nv1\xc2\x85\n",
     ],
 )
 def test_malformed_feed_info_cannot_claim_a_release_version(feed_info: bytes) -> None:
