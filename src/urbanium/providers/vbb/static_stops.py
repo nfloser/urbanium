@@ -8,7 +8,7 @@ from __future__ import annotations
 import csv
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from hashlib import sha256
 from io import BytesIO, StringIO
 from re import fullmatch
@@ -80,6 +80,8 @@ class VbbGtfsStaticStopInventory:
         self._digest = sha256(stops_txt).hexdigest()
         self._archive_digest: str | None = None
         self._feed_version: str | None = None
+        self._feed_start_date: date | None = None
+        self._feed_end_date: date | None = None
         self._points = _parse_stops(stops_txt)
 
     @classmethod
@@ -156,7 +158,11 @@ class VbbGtfsStaticStopInventory:
         inventory = cls(config, stops_txt=stops_txt, retrieved_at=retrieved_at)
         inventory._archive_digest = sha256(archive_bytes).hexdigest()
         if feed_info is not None:
-            inventory._feed_version = _parse_feed_version(feed_info)
+            (
+                inventory._feed_version,
+                inventory._feed_start_date,
+                inventory._feed_end_date,
+            ) = _parse_feed_info(feed_info)
         return inventory
 
     @property
@@ -164,6 +170,18 @@ class VbbGtfsStaticStopInventory:
         """Unverified feed_info.txt version label, not proof of feed compatibility."""
 
         return self._feed_version
+
+    @property
+    def feed_start_date(self) -> date | None:
+        """Publisher-declared first service date, not independently verified."""
+
+        return self._feed_start_date
+
+    @property
+    def feed_end_date(self) -> date | None:
+        """Publisher-declared last service date, not independently verified."""
+
+        return self._feed_end_date
 
     @property
     def archive_sha256(self) -> str | None:
@@ -265,8 +283,8 @@ def _parse_stops(payload: bytes) -> dict[str, Wgs84Point | None]:
         raise VbbGtfsStaticStopError("malformed GTFS stops.txt encoding or CSV") from exc
 
 
-def _parse_feed_version(payload: bytes) -> str | None:
-    """Read only the optional release label, not the full GTFS feed_info contract."""
+def _parse_feed_info(payload: bytes) -> tuple[str | None, date | None, date | None]:
+    """Read optional publisher labels and service dates, not full GTFS feed_info."""
 
     try:
         reader = csv.DictReader(StringIO(payload.decode("utf-8-sig"), newline=""), strict=True)
@@ -280,11 +298,28 @@ def _parse_feed_version(payload: bytes) -> str | None:
         ):
             raise VbbGtfsStaticStopError("invalid GTFS feed_info.txt row")
 
-        version = cast(str | None, rows[0].get("feed_version"))
-        if version is None or not version.strip():
-            return None
-        if any(category(char) == "Cc" for char in version):
+        row = rows[0]
+        version = cast(str | None, row.get("feed_version"))
+        if version is not None and not version.strip():
+            version = None
+        if version is not None and any(category(char) == "Cc" for char in version):
             raise VbbGtfsStaticStopError("invalid GTFS feed_version")
-        return version
+
+        start = _parse_feed_date(row.get("feed_start_date"), "feed_start_date")
+        end = _parse_feed_date(row.get("feed_end_date"), "feed_end_date")
+        if start is not None and end is not None and start > end:
+            raise VbbGtfsStaticStopError("invalid GTFS feed date range")
+        return version, start, end
     except (UnicodeDecodeError, csv.Error) as exc:
         raise VbbGtfsStaticStopError("malformed GTFS feed_info.txt encoding or CSV") from exc
+
+
+def _parse_feed_date(raw: str | None, field: str) -> date | None:
+    if raw is None or not raw.strip():
+        return None
+    if fullmatch(r"[0-9]{8}", raw) is None:
+        raise VbbGtfsStaticStopError(f"invalid GTFS {field}")
+    try:
+        return date.fromisoformat(raw)
+    except ValueError as exc:
+        raise VbbGtfsStaticStopError(f"invalid GTFS {field}") from exc
