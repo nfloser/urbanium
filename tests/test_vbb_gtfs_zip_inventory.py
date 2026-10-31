@@ -211,8 +211,8 @@ def test_printable_unicode_feed_version_is_preserved() -> None:
 
 def test_feed_info_exposes_declared_coverage_without_changing_stop_identity() -> None:
     metadata = (
-        b"feed_version,feed_start_date,feed_end_date\\n"
-        b"release-1,20261001,20261031\\n"
+        b"feed_version,feed_start_date,feed_end_date\n"
+        b"release-1,20261001,20261031\n"
     )
     source = load(archive((("stops.txt", STOPS), ("feed_info.txt", metadata))))
     plain = load(archive())
@@ -222,14 +222,16 @@ def test_feed_info_exposes_declared_coverage_without_changing_stop_identity() ->
     assert source.feed_end_date == date(2026, 10, 31)
     assert plain.feed_start_date is None
     assert plain.feed_end_date is None
-    assert source.resolve("de:1") is not None
-    assert source.resolve("de:1").entity == plain.resolve("de:1").entity  # type: ignore[union-attr]
+    source_point = source.resolve("de:1")
+    plain_point = plain.resolve("de:1")
+    assert source_point is not None and plain_point is not None
+    assert source_point.entity == plain_point.entity
 
 
 def test_optional_feed_dates_allow_open_ended_or_blank_coverage() -> None:
-    start_only = b"feed_start_date,feed_end_date\\n20261001,\\n"
-    end_only = b"feed_start_date,feed_end_date\\n,20261031\\n"
-    blank = b"feed_start_date,feed_end_date\\n , \\n"
+    start_only = b"feed_start_date,feed_end_date\n20261001,\n"
+    end_only = b"feed_start_date,feed_end_date\n,20261031\n"
+    blank = b"feed_start_date,feed_end_date\n , \n"
 
     start = load(archive((("stops.txt", STOPS), ("feed_info.txt", start_only))))
     end = load(archive((("stops.txt", STOPS), ("feed_info.txt", end_only))))
@@ -243,12 +245,12 @@ def test_optional_feed_dates_allow_open_ended_or_blank_coverage() -> None:
 @pytest.mark.parametrize(
     "metadata",
     [
-        b"feed_start_date\\n2026-10-01\\n",
-        b"feed_start_date\\n2026101\\n",
-        b"feed_start_date\\n20260230\\n",
-        b"feed_end_date\\n20261301\\n",
-        "feed_start_date\\n２０２６１００１\\n".encode(),
-        b"feed_start_date,feed_end_date\\n20261101,20261031\\n",
+        b"feed_start_date\n2026-10-01\n",
+        b"feed_start_date\n2026101\n",
+        b"feed_start_date\n20260230\n",
+        b"feed_end_date\n20261301\n",
+        "feed_start_date\n２０２６１００１\n".encode(),
+        b"feed_start_date,feed_end_date\n20261101,20261031\n",
     ],
 )
 def test_invalid_declared_coverage_is_rejected(metadata: bytes) -> None:
