@@ -1,6 +1,6 @@
 """Offline GTFS ZIP ingestion must not weaken the existing stop-point evidence boundary."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from hashlib import sha256
 from io import BytesIO
 from warnings import catch_warnings, filterwarnings
@@ -207,6 +207,53 @@ def test_printable_unicode_feed_version_is_preserved() -> None:
     source = load(archive((("stops.txt", STOPS), ("feed_info.txt", metadata))))
 
     assert source.feed_version == "release-Ä"
+
+
+def test_feed_info_exposes_declared_coverage_without_changing_stop_identity() -> None:
+    metadata = (
+        b"feed_version,feed_start_date,feed_end_date\\n"
+        b"release-1,20261001,20261031\\n"
+    )
+    source = load(archive((("stops.txt", STOPS), ("feed_info.txt", metadata))))
+    plain = load(archive())
+
+    assert source.feed_version == "release-1"
+    assert source.feed_start_date == date(2026, 10, 1)
+    assert source.feed_end_date == date(2026, 10, 31)
+    assert plain.feed_start_date is None
+    assert plain.feed_end_date is None
+    assert source.resolve("de:1") is not None
+    assert source.resolve("de:1").entity == plain.resolve("de:1").entity  # type: ignore[union-attr]
+
+
+def test_optional_feed_dates_allow_open_ended_or_blank_coverage() -> None:
+    start_only = b"feed_start_date,feed_end_date\\n20261001,\\n"
+    end_only = b"feed_start_date,feed_end_date\\n,20261031\\n"
+    blank = b"feed_start_date,feed_end_date\\n , \\n"
+
+    start = load(archive((("stops.txt", STOPS), ("feed_info.txt", start_only))))
+    end = load(archive((("stops.txt", STOPS), ("feed_info.txt", end_only))))
+    unknown = load(archive((("stops.txt", STOPS), ("feed_info.txt", blank))))
+
+    assert (start.feed_start_date, start.feed_end_date) == (date(2026, 10, 1), None)
+    assert (end.feed_start_date, end.feed_end_date) == (None, date(2026, 10, 31))
+    assert (unknown.feed_start_date, unknown.feed_end_date) == (None, None)
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        b"feed_start_date\\n2026-10-01\\n",
+        b"feed_start_date\\n2026101\\n",
+        b"feed_start_date\\n20260230\\n",
+        b"feed_end_date\\n20261301\\n",
+        "feed_start_date\\n２０２６１００１\\n".encode(),
+        b"feed_start_date,feed_end_date\\n20261101,20261031\\n",
+    ],
+)
+def test_invalid_declared_coverage_is_rejected(metadata: bytes) -> None:
+    with pytest.raises(VbbGtfsStaticStopError, match="feed_start_date|feed_end_date|range"):
+        load(archive((("stops.txt", STOPS), ("feed_info.txt", metadata))))
 
 
 def test_duplicate_root_feed_info_is_rejected() -> None:
