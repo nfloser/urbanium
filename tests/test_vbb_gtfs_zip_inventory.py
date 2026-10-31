@@ -210,10 +210,7 @@ def test_printable_unicode_feed_version_is_preserved() -> None:
 
 
 def test_feed_info_exposes_declared_coverage_without_changing_stop_identity() -> None:
-    metadata = (
-        b"feed_version,feed_start_date,feed_end_date\n"
-        b"release-1,20261001,20261031\n"
-    )
+    metadata = b"feed_version,feed_start_date,feed_end_date\nrelease-1,20261001,20261031\n"
     source = load(archive((("stops.txt", STOPS), ("feed_info.txt", metadata))))
     plain = load(archive())
 
@@ -222,6 +219,9 @@ def test_feed_info_exposes_declared_coverage_without_changing_stop_identity() ->
     assert source.feed_end_date == date(2026, 10, 31)
     assert plain.feed_start_date is None
     assert plain.feed_end_date is None
+    direct = VbbGtfsStaticStopInventory(CONFIG, stops_txt=STOPS, retrieved_at=NOW)
+    assert direct.feed_start_date is None
+    assert direct.feed_end_date is None
     source_point = source.resolve("de:1")
     plain_point = plain.resolve("de:1")
     assert source_point is not None and plain_point is not None

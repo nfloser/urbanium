@@ -305,8 +305,8 @@ def _parse_feed_info(payload: bytes) -> tuple[str | None, date | None, date | No
         if version is not None and any(category(char) == "Cc" for char in version):
             raise VbbGtfsStaticStopError("invalid GTFS feed_version")
 
-        start = _parse_feed_date(row.get("feed_start_date"), "feed_start_date")
-        end = _parse_feed_date(row.get("feed_end_date"), "feed_end_date")
+        start = _parse_feed_date(cast(str | None, row.get("feed_start_date")), "feed_start_date")
+        end = _parse_feed_date(cast(str | None, row.get("feed_end_date")), "feed_end_date")
         if start is not None and end is not None and start > end:
             raise VbbGtfsStaticStopError("invalid GTFS feed date range")
         return version, start, end

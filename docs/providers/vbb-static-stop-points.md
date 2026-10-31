@@ -89,15 +89,16 @@ Resolved point evidence includes both the original `stops.txt`
 SHA-256 and the entire ZIP SHA-256. This identifies the exact supplied
 release bytes even when two releases have identical stop coordinates.
 The direct `stops_txt=` constructor remains supported and retains its
-existing record-ID format; its `archive_sha256` and `feed_version` are `None`.
+existing record-ID format; its `archive_sha256`, `feed_version` and declared
+coverage dates are `None`.
 
 ## Optional publisher-declared version and service dates
 
 When a supplied ZIP includes exactly one root `feed_info.txt`, Urbanium
-reads its optional `feed_version`, `feed_start_date` and `feed_end_date` CSV columns.
-A single valid record
-with a nonblank value yields that exact source string; absent files,
-missing columns and blank values yield `None`. Duplicate root
+reads its optional `feed_version`, `feed_start_date` and `feed_end_date`
+CSV columns. A single valid record with a nonblank `feed_version`
+preserves that exact label; absent files, missing columns and blank
+values yield `None`. Duplicate root
 `feed_info.txt` entries, malformed CSV/UTF-8, ambiguous rows and
 Unicode control characters (category `Cc`, including DEL and C1 controls)
 in a declared version are rejected; printable non-ASCII labels are retained
