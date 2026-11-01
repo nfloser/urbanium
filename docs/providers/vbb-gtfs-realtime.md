@@ -56,6 +56,23 @@ consumer supplies a licensed, version-compatible `stops.txt` inventory.
 It does not interpret route/trip qualifications or turn a match into an
 impact claim.
 
+## Optional realtime feed version
+
+`VbbAlertSnapshot.feed_version` retains the optional GTFS-Realtime
+`FeedHeader.feed_version` label from the **same** successful feed read.
+Missing, blank and nonprinting labels yield `None`; a rejected optional
+label does not invalidate the alert count or explicit stop references.
+A valid label is also retained when the feed timestamp is missing and the
+provider result is degraded. Unavailable snapshots have no version.
+
+This is an unverified publisher-provided string, not a verified release
+identity or a guarantee that the Alert stop IDs match a supplied GTFS
+static archive. The separate static inventory exposes its own optional
+`feed_version` from `feed_info.txt`; Urbanium does **not** automatically
+compare these labels or infer compatibility from matching strings.
+Callers must verify publisher, namespace and applicable dataset versions
+before resolving realtime stop IDs against static data.
+
 ## Time and freshness
 
 When the optional GTFS-Realtime feed-header timestamp is present, it becomes `observed_at`. Freshness is assessed against the configured threshold, currently five minutes.
