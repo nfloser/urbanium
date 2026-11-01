@@ -45,6 +45,7 @@ class VbbAlertSnapshot:
 
     result: ProviderResult
     stop_references: tuple[VbbAlertStopReference, ...]
+    feed_version: str | None = None  # Unverified GTFS-Realtime header label.
 
 
 class VbbGtfsRtConfigurationError(ValueError):
@@ -187,6 +188,9 @@ class VbbGtfsRtProvider:
                 quality_code=quality_code,
             )
             stop_references = _alert_stop_references(message)
+            version = message.header.feed_version if message.header.HasField("feed_version") else None
+            if version is not None and (not version.strip() or not version.isprintable()):
+                version = None
         except (DecodeError, OverflowError, OSError, ValueError):
             return VbbAlertSnapshot(
                 result=_unavailable(
@@ -209,7 +213,9 @@ class VbbGtfsRtProvider:
                 freshness=freshness,
                 observations=(observation,),
             )
-        return VbbAlertSnapshot(result=result, stop_references=stop_references)
+        return VbbAlertSnapshot(
+            result=result, stop_references=stop_references, feed_version=version
+        )
 
     def _snapshot_time(
         self,
