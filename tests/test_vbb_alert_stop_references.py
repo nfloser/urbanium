@@ -84,10 +84,52 @@ def test_missing_feed_header_time_preserves_degradation_and_explicit_references(
     assert snapshot.result.observations[0].quality_code == "receipt_fallback"
 
 
+def test_realtime_feed_version_is_retained_without_changing_alerts() -> None:
+    message = gtfs_realtime_pb2.FeedMessage()
+    message.ParseFromString(_feed())
+    message.header.feed_version = "release-2026-10"
+    payload = message.SerializeToString()
+
+    snapshot = _provider(payload).read_snapshot()
+
+    assert snapshot.result.availability is Availability.AVAILABLE
+    assert snapshot.feed_version == "release-2026-10"
+    assert len(snapshot.stop_references) == 3
+    assert str(snapshot.result.observations[0].value) == "2"
+    assert str(_provider(payload).read().observations[0].value) == "2"
+
+
+def test_absent_blank_or_nonprinting_feed_version_remains_unknown() -> None:
+    assert _provider(_feed()).read_snapshot().feed_version is None
+
+    for label in ("", "   ", "release-\x01", "release-\u200b"):
+        message = gtfs_realtime_pb2.FeedMessage()
+        message.ParseFromString(_feed())
+        message.header.feed_version = label
+
+        snapshot = _provider(message.SerializeToString()).read_snapshot()
+
+        assert snapshot.feed_version is None
+        assert snapshot.result.availability is Availability.AVAILABLE
+        assert len(snapshot.stop_references) == 3
+
+
+def test_missing_header_timestamp_does_not_discard_valid_feed_version() -> None:
+    message = gtfs_realtime_pb2.FeedMessage()
+    message.ParseFromString(_feed(timestamp=False))
+    message.header.feed_version = "release-2026-10"
+
+    snapshot = _provider(message.SerializeToString()).read_snapshot()
+
+    assert snapshot.result.availability is Availability.DEGRADED
+    assert snapshot.feed_version == "release-2026-10"
+
+
 def test_unavailable_feeds_never_expose_unvalidated_stop_references() -> None:
     malformed = _provider(b"not-a-protobuf").read_snapshot()
     assert malformed.result.availability is Availability.UNAVAILABLE
     assert malformed.stop_references == ()
+    assert malformed.feed_version is None
     assert malformed.result.error is not None
     assert malformed.result.error.code is ProviderErrorCode.INVALID_RESPONSE
 
@@ -97,6 +139,7 @@ def test_unavailable_feeds_never_expose_unvalidated_stop_references() -> None:
     unavailable = _provider(b"", fetcher=timeout).read_snapshot()
     assert unavailable.result.availability is Availability.UNAVAILABLE
     assert unavailable.stop_references == ()
+    assert unavailable.feed_version is None
 
 
 def test_future_dated_feed_does_not_leak_stop_references() -> None:
