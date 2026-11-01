@@ -188,7 +188,9 @@ class VbbGtfsRtProvider:
                 quality_code=quality_code,
             )
             stop_references = _alert_stop_references(message)
-            version = message.header.feed_version if message.header.HasField("feed_version") else None
+            version = (
+                message.header.feed_version if message.header.HasField("feed_version") else None
+            )
             if version is not None and (not version.strip() or not version.isprintable()):
                 version = None
         except (DecodeError, OverflowError, OSError, ValueError):
