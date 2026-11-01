@@ -121,6 +121,12 @@ SHA-256 already binds the evidence to exact archive bytes. Consult the
 [GTFS Schedule `feed_info.txt` specification](https://gtfs.org/documentation/schedule/reference/#feed_infotxt)
 for the upstream field meaning.
 
+The VBB realtime adapter separately exposes the optional, unverified
+`VbbAlertSnapshot.feed_version` from its `FeedHeader`. Even if both
+static and realtime labels are present and textually identical, that
+alone is not a verified compatibility check; the caller must still
+establish shared publisher and stop-ID namespace.
+
 Neither the declared coverage dates nor the digest establish the official release identity,
 licence, effective dates or compatibility with a GTFS-Realtime feed.
 Callers must record that metadata and check ID-namespace compatibility
