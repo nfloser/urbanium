@@ -3,11 +3,18 @@
 Urbanium's Berlin reference deployment uses the official Verkehrsverbund Berlin-Brandenburg (VBB) GTFS-Realtime feed as the first implemented realtime mobility source.
 
 - Upstream dataset page: https://unternehmen.vbb.de/digitale-services/datensaetze/
-- Production feed: https://production.gtfsrt.vbb.de
+- Production feed data: https://production.gtfsrt.vbb.de/data
 - Urbanium capability: `realtime_transport`
 - Urbanium source: `vbb_gtfs_rt`
 
 The city registry records the source under the VBB's published CC BY 4.0 terms. Upstream attribution and licensing remain authoritative.
+
+The host root (`https://production.gtfsrt.vbb.de/`) is an informational
+HTML page, **not** the protobuf feed. The Berlin provider binding and city
+registry both point to `/data`, which the feed operator identifies as the
+actual GTFS-Realtime resource. The adapter does not discover or append this
+path automatically. The opt-in live smoke test uses the configured data URL;
+deterministic CI does not request it.
 
 ## Normalized observation
 

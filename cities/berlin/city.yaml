@@ -38,7 +38,7 @@ sources:
     status: verified
     authority: authoritative
     capabilities: [realtime_transport]
-    endpoint: https://production.gtfsrt.vbb.de/
+    endpoint: https://production.gtfsrt.vbb.de/data
     update_frequency: realtime
     license:
       identifier: CC BY 4.0
