@@ -64,10 +64,21 @@ def provider(
 
 def test_reference_configuration_binds_the_verified_berlin_source() -> None:
     config = load_vbb_gtfs_rt_config(ROOT / "cities" / "berlin" / "providers" / "vbb_gtfs_rt.yaml")
+    city = load_city_definition(ROOT / "cities" / "berlin" / "city.yaml")
+    source = next(source for source in city.sources if source.id == "vbb_gtfs_rt")
 
     assert config.city_id == "berlin"
     assert config.source_id == "vbb_gtfs_rt"
-    assert str(config.endpoint).rstrip("/") == "https://production.gtfsrt.vbb.de"
+    assert str(config.endpoint).rstrip("/") == "https://production.gtfsrt.vbb.de/data"
+    assert str(source.endpoint).rstrip("/") == str(config.endpoint).rstrip("/")
+
+    def assert_data_resource(url: str, timeout: float) -> bytes:
+        assert url == "https://production.gtfsrt.vbb.de/data"
+        assert timeout == 10.0
+        return feed(alerts=1)
+
+    result = VbbGtfsRtProvider(config, fetcher=assert_data_resource, clock=lambda: NOW).read()
+    assert result.availability is Availability.AVAILABLE
 
 
 def test_alert_entities_are_normalized_as_a_numeric_mobility_observation() -> None:
