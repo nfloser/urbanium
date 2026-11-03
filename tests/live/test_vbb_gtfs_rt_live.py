@@ -17,8 +17,14 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_current_vbb_gtfs_rt_feed_is_readable() -> None:
     config = load_vbb_gtfs_rt_config(ROOT / "cities" / "berlin" / "providers" / "vbb_gtfs_rt.yaml")
 
-    result = VbbGtfsRtProvider(config).read()
+    snapshot = VbbGtfsRtProvider(config).read_snapshot()
+    result = snapshot.result
 
     assert result.availability is not Availability.UNAVAILABLE, result.error
     assert result.observations
     assert result.observations[0].quantity_id == "active_service_alerts"
+    assert result.observations[0].value >= 0
+    assert all(ref.stop_id and ref.selector_index >= 0 for ref in snapshot.stop_references)
+    assert snapshot.feed_version is None or (
+        snapshot.feed_version.strip() and snapshot.feed_version.isprintable()
+    )
