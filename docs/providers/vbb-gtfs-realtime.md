@@ -110,3 +110,11 @@ Deterministic tests construct GTFS-Realtime protobuf messages in memory; normal 
 An optional smoke test can be enabled explicitly:
 
     URBANIUM_LIVE_VBB=1 pytest -m live tests/live/test_vbb_gtfs_rt_live.py
+
+The opt-in check reads one complete `VbbAlertSnapshot` from the configured
+endpoint and checks the canonical nonnegative Alert count plus structural
+invariants of any explicit stop references and optional version label. It
+does not require the live feed to contain alerts, stop references or a
+version label. Passing this check establishes only that one current
+response was readable; it does not verify static GTFS compatibility,
+coverage, upstream reliability or transport impacts. Normal CI skips it.
