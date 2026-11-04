@@ -218,7 +218,9 @@ def test_invalid_utf8_vbb_config_reports_configuration_error(tmp_path: Path) -> 
     config_path = tmp_path / "vbb_gtfs_rt.yaml"
     config_path.write_bytes(b"city_id: berlin\nsource_id: \xff\n")
 
-    with pytest.raises(VbbGtfsRtConfigurationError, match="failed to read VBB GTFS-RT config") as exc:
+    with pytest.raises(
+        VbbGtfsRtConfigurationError, match="failed to read VBB GTFS-RT config"
+    ) as exc:
         load_vbb_gtfs_rt_config(config_path)
 
     assert str(config_path) in str(exc.value)
