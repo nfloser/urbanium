@@ -16,7 +16,7 @@ actual GTFS-Realtime resource. The adapter does not discover or append this
 path automatically. The opt-in live smoke test uses the configured data URL;
 deterministic CI does not request it.
 
-## Normalized observation
+Invalid UTF-8 in the city provider YAML is reported as a VBB configuration\nerror with the affected file path, just like unreadable files or malformed YAML.\nIt is not treated as an unavailable live feed or replaced with default settings.\n\n## Normalized observation
 
 The adapter parses one GTFS-Realtime `FeedMessage` and emits one canonical numeric observation:
 
