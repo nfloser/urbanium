@@ -69,7 +69,7 @@ def load_vbb_gtfs_rt_config(path: Path) -> VbbGtfsRtConfig:
 
     try:
         raw = safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, YAMLError) as exc:
+    except (OSError, UnicodeError, YAMLError) as exc:
         raise VbbGtfsRtConfigurationError(
             f"failed to read VBB GTFS-RT config {path}: {exc}"
         ) from exc
