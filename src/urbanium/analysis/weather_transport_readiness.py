@@ -5,8 +5,10 @@ from datetime import UTC, datetime
 from pydantic import JsonValue
 
 from urbanium.analysis.evidence import (
+    AnswerabilityStatus,
     EvidenceRequirement,
     NumericConstraint,
+    assess_answerability,
     assess_evidence,
 )
 from urbanium.core.city import CityDefinition
@@ -144,9 +146,13 @@ class WeatherTransportReadiness:
             _TRANSPORT_EVIDENCE,
             executed_at=self._executed_at,
         )
+        answerability = assess_answerability(
+            (_WEATHER_EVIDENCE, _TRANSPORT_EVIDENCE),
+            (weather, transport),
+        )
         problems = weather.problems + transport.problems
 
-        if not weather.has_measurements and not transport.has_measurements:
+        if answerability.status is AnswerabilityStatus.UNAVAILABLE:
             return ComponentExecutionOutcome(status=RunStatus.UNAVAILABLE, problems=problems)
 
         gap_seconds, closest_pair = _closest_observation_pair(
@@ -154,7 +160,7 @@ class WeatherTransportReadiness:
         )
         snapshot: dict[str, JsonValue] = {
             "independent_observations_only": True,
-            "both_sources_usable": weather.usable and transport.usable,
+            "both_sources_usable": answerability.answerable,
             "closest_observation_gap_seconds": gap_seconds,
             "closest_observation_pair": closest_pair,
             "weather": weather.snapshot,
@@ -166,8 +172,13 @@ class WeatherTransportReadiness:
             state_category=DerivedStateCategory.DERIVED,
             payload=snapshot,
         )
+        status = (
+            RunStatus.AVAILABLE
+            if answerability.status is AnswerabilityStatus.AVAILABLE
+            else RunStatus.DEGRADED
+        )
         return ComponentExecutionOutcome(
-            status=RunStatus.AVAILABLE if not problems else RunStatus.DEGRADED,
+            status=status,
             outputs=(output,),
             problems=problems,
         )
