@@ -117,7 +117,9 @@ def assess_evidence(
         validate_provider_result(provider, result)
         if provider.capability_id != capability_id:
             raise ValueError("provider capability does not match requirement")
-        if any(observation.received_at > prepared_time for observation in result.observations):
+        if any(
+            observation.received_at > prepared_time for observation in result.observations
+        ):
             raise ValueError("evidence was prepared before its observations were received")
     except (KeyError, TypeError, ValueError):
         return EvidenceAssessment(
@@ -246,9 +248,8 @@ def assess_answerability(
     )
     duplicate_requirements = _duplicates(item.capability_id for item in ordered_requirements)
     if duplicate_requirements:
-        raise ValueError(
-            "duplicate evidence requirement capabilities: " + ", ".join(duplicate_requirements)
-        )
+        names = ", ".join(duplicate_requirements)
+        raise ValueError(f"duplicate evidence requirement capabilities: {names}")
 
     by_capability: dict[str, EvidenceAssessment] = {}
     for assessment in assessments:
