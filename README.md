@@ -41,20 +41,17 @@ The first [weather/transport source-readiness component](docs/concepts/weather-t
 
 A persistent last-known-good state store is not implemented yet. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
 
-## Live demo
+## Browser demo
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/nfloser/urbanium)
+[Try Urbanium / Testen](https://nfloser.github.io/urbanium/)
 
-Open the deploy button, sign in to Render and confirm the Blueprint. Render
-installs and starts Urbanium using its Python runtime. The demo needs no
-Docker setup, database or API keys.
+Explore the Berlin and Mainz city catalog directly in your browser. The demo
+shows the capabilities and source configurations from the published build.
+For live observations, [run the API locally](docs/api/v1.md#run-locally).
 
-Once the service is ready, append `/api/v1/docs` to its public URL and share
-that link. Visitors can explore Berlin and Mainz and run read-only requests
-from their browser. Start with `GET /api/v1/cities` and then try a
-[live observation request](docs/api/v1.md#canonical-observation-reads).
-Free instances may take a moment to wake up after inactivity. Deploy again
-from the Render dashboard when you want to publish an update.
+Maintainers can publish the demo by selecting **GitHub Actions** under
+**Settings → Pages → Source** and running the **Browser demo** workflow on
+`main`. Changes pushed to `main` rebuild the demo automatically.
 
 ## Development
 
