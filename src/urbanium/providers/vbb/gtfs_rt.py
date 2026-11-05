@@ -4,9 +4,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from gzip import BadGzipFile, GzipFile
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal, cast
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
+from zlib import error as ZlibError
 
 from google.protobuf.message import DecodeError
 from google.transit import gtfs_realtime_pb2
@@ -25,7 +28,7 @@ from urbanium.core.provider import (
     ProviderResult,
 )
 
-MAX_FEED_BYTES = 5_000_000
+MAX_FEED_BYTES = 10_000_000
 FetchBytes = Callable[[str, float], bytes]
 Clock = Callable[[], datetime]
 
@@ -124,6 +127,11 @@ class VbbGtfsRtProvider:
         except TimeoutError:
             return VbbAlertSnapshot(
                 result=_unavailable(ProviderErrorCode.TIMEOUT, "VBB GTFS-RT request timed out"),
+                stop_references=(),
+            )
+        except (BadGzipFile, EOFError, ZlibError):
+            return VbbAlertSnapshot(
+                result=_unavailable(ProviderErrorCode.INVALID_RESPONSE, "invalid VBB gzip feed"),
                 stop_references=(),
             )
         except OSError:
@@ -277,8 +285,19 @@ def _unavailable(code: ProviderErrorCode, message: str) -> ProviderResult:
 
 
 def _fetch_bytes(url: str, timeout: float) -> bytes:
-    with urlopen(url, timeout=timeout) as response:
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "Urbanium (https://github.com/nfloser/urbanium)",
+            "Accept-Encoding": "gzip",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
         payload = cast(bytes, response.read(MAX_FEED_BYTES + 1))
+        compressed = response.headers.get("Content-Encoding", "").lower() == "gzip"
+    if compressed and len(payload) <= MAX_FEED_BYTES:
+        with GzipFile(fileobj=BytesIO(payload)) as archive:
+            payload = archive.read(MAX_FEED_BYTES + 1)
     if len(payload) > MAX_FEED_BYTES:
         raise ValueError("VBB GTFS-RT feed exceeds size limit")
     return payload

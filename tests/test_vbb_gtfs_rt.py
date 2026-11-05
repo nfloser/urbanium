@@ -1,5 +1,7 @@
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from gzip import compress
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -7,6 +9,7 @@ from google.transit import gtfs_realtime_pb2
 
 from tests.contracts.provider import ProviderContractCases, assert_provider_contract
 from urbanium.core.provider import Availability, Freshness, ProviderErrorCode
+from urbanium.providers.vbb import gtfs_rt
 from urbanium.providers.vbb.gtfs_rt import (
     VbbGtfsRtConfig,
     VbbGtfsRtConfigurationError,
@@ -224,3 +227,17 @@ def test_invalid_utf8_vbb_config_reports_configuration_error(tmp_path: Path) -> 
         load_vbb_gtfs_rt_config(config_path)
 
     assert str(config_path) in str(exc.value)
+
+
+def test_gzip_fetch_limits_decoded_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Response(BytesIO):
+        headers = {"Content-Encoding": "gzip"}
+
+    payload = b"a" * 256
+    monkeypatch.setattr(gtfs_rt, "urlopen", lambda *args, **kwargs: Response(compress(payload)))
+    monkeypatch.setattr(gtfs_rt, "MAX_FEED_BYTES", len(payload))
+    assert gtfs_rt._fetch_bytes("https://example.test/feed", 1) == payload
+
+    monkeypatch.setattr(gtfs_rt, "MAX_FEED_BYTES", len(payload) - 1)
+    with pytest.raises(ValueError, match="size limit"):
+        gtfs_rt._fetch_bytes("https://example.test/feed", 1)

@@ -99,6 +99,9 @@ The receipt timestamp is captured after the feed has been downloaded, not when t
 
 ## Failure behavior
 
+The adapter requests gzip and identifies itself as Urbanium. Both the downloaded
+body and the decoded protobuf are limited to 10 MB.
+
 Timeouts, upstream I/O errors, malformed protobuf messages and feeds above the configured size boundary return explicit unavailable `ProviderResult` values. No cached value or fabricated alert count is substituted.
 
 ## Cross-domain boundary
