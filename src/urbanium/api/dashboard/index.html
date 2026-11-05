@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Urbanium · Stadtmonitor</title>
+<style>
+:root {color-scheme:light dark;font:16px/1.5 system-ui,sans-serif}
+body {margin:0}
+main {max-width:68rem;margin:auto;padding:2rem 1rem}
+header {border-bottom:1px solid GrayText;margin-bottom:1.5rem}
+h1 {font-size:clamp(2rem,5vw,3.5rem);margin:.2rem 0}
+select,button {font:inherit;padding:.45rem;margin:.3rem}
+#cards {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,19rem),1fr));gap:1rem}
+article {border:1px solid GrayText;border-radius:.6rem;padding:1rem;overflow-wrap:anywhere}
+article h3 {margin:0}
+.measurement {border-top:1px solid GrayText;padding-top:.75rem;margin-top:.75rem}
+.value {display:block;font-size:2rem;font-weight:700}
+footer {margin-top:2rem}
+</style>
+<main>
+<header>
+  <small>URBANIUM / LIVE-DEMO</small>
+  <h1>Stadtmonitor</h1>
+  <p>Messwerte und Meldungen aus den angebundenen Datenquellen.</p>
+</header>
+<label for="city">Stadt</label>
+<select id="city" disabled></select>
+<button id="refresh" disabled>Neu abrufen</button>
+<h2>Datenquellen</h2>
+<p id="status" role="status">Städte werden geladen …</p>
+<section id="cards" aria-label="Datenquellen"></section>
+<noscript>Der Stadtmonitor benötigt JavaScript.</noscript>
+<footer><a href="./api/v1/docs">API in Swagger öffnen</a></footer>
+</main>
+<script>
+const citySelect = document.querySelector("#city");
+const refresh = document.querySelector("#refresh");
+const status = document.querySelector("#status");
+const cards = document.querySelector("#cards");
+const capabilityNames = {
+  weather: "Wetter", realtime_transport: "Nahverkehr",
+  river_level: "Pegelstand", open_data_catalog: "Open Data",
+};
+const quantityNames = {
+  air_temperature: "Lufttemperatur", active_service_alerts: "Aktive Verkehrsmeldungen",
+};
+const availability = {available: "Verfügbar", degraded: "Eingeschränkt", unavailable: "Nicht verfügbar"};
+const freshness = {fresh: "Aktuell", stale: "Veraltet", unknown: "Aktualität unbekannt"};
+const support = {
+  configured: "Konfiguriert", candidate: "Integration wird geprüft",
+  unknown: "Status ungeklärt", unavailable: "Nicht verfügbar",
+};
+const cities = new Map();
+let currentRequest;
+
+function node(tag, text, className) {
+  const element = document.createElement(tag);
+  element.textContent = text;
+  if (className) element.className = className;
+  return element;
+}
+
+function renderObservation(observation, dateFormat) {
+  const row = node("div", "", "measurement");
+  const name = quantityNames[observation.quantity_id] ?? observation.quantity_id;
+  const unit = observation.unit === "Cel" ? "°C" : observation.unit === "1" ? "" : observation.unit;
+  const value = String(observation.value).replace(".", ",");
+  row.append(node("div", name), node("strong", [value, unit].filter(Boolean).join(" "), "value"));
+  if (observation.quantity_id === "active_service_alerts") {
+    row.append(node("small", "Anzahl der Meldungen im Feed, unabhängig von ihrer Schwere."));
+  }
+  row.append(node("div", `Messzeit · ${dateFormat.format(new Date(observation.observed_at))}`));
+  return row;
+}
+
+async function loadSource(card, city, capability, source, signal) {
+  const segments = [city.id, source.id, capability.id].map(encodeURIComponent);
+  try {
+    const response = await fetch(
+      `./api/v1/cities/${segments[0]}/sources/${segments[1]}/observations/${segments[2]}`,
+      {signal},
+    );
+    const body = await response.json();
+    if (!body.result) {
+      card.append(node("p", body.code === "provider_not_bound"
+        ? "Quelle im Katalog. Für diese Abfrage ist noch kein Live-Adapter angebunden."
+        : `Abfrage fehlgeschlagen (HTTP ${response.status}).`));
+      return;
+    }
+    const result = body.result;
+    card.append(node("p", `${availability[result.availability]} · ${freshness[result.freshness]}`));
+    if (result.error) card.append(node("p", `Quellenhinweis · ${result.error.message}`));
+    if (!result.observations.length) card.append(node("p", "Keine Messwerte in dieser Antwort."));
+    const dateFormat = new Intl.DateTimeFormat("de-DE", {
+      dateStyle: "medium", timeStyle: "short", timeZone: city.timezone,
+    });
+    for (const observation of result.observations) {
+      card.append(renderObservation(observation, dateFormat));
+    }
+  } catch {
+    if (!signal.aborted) card.append(node("p", "Die API-Antwort konnte nicht geladen werden."));
+  }
+}
+
+async function update() {
+  currentRequest?.abort();
+  currentRequest = new AbortController();
+  const {signal} = currentRequest;
+  const city = cities.get(citySelect.value);
+  cards.replaceChildren();
+  status.textContent = `Daten für ${city.name} werden abgerufen …`;
+  const reads = [];
+  for (const capability of city.capabilities) {
+    const name = capabilityNames[capability.id] ?? capability.id;
+    const sources = city.sources.filter(source => source.capabilities.includes(capability.id));
+    if (capability.support !== "configured" || !sources.length) {
+      const card = node("article", "");
+      card.append(node("h3", name), node("p", support[capability.support] ?? capability.support));
+      for (const source of sources) card.append(node("p", source.provider));
+      if (capability.notes) card.append(node("p", capability.notes));
+      cards.append(card);
+      continue;
+    }
+    for (const source of sources) {
+      const card = node("article", "");
+      card.append(node("h3", name), node("div", source.provider));
+      cards.append(card);
+      reads.push(loadSource(card, city, capability, source, signal));
+    }
+  }
+  await Promise.all(reads);
+  if (!signal.aborted) status.textContent = `${city.name} · Zeiten in ${city.timezone}`;
+}
+
+async function start() {
+  const response = await fetch("./api/v1/cities");
+  if (!response.ok) throw new Error("City discovery failed");
+  for (const city of (await response.json()).cities) {
+    cities.set(city.id, city);
+    citySelect.add(new Option(city.name, city.id));
+  }
+  if (!cities.size) {
+    status.textContent = "Keine Städte im Katalog.";
+    return;
+  }
+  citySelect.disabled = false;
+  refresh.disabled = false;
+  citySelect.addEventListener("change", update);
+  refresh.addEventListener("click", update);
+  await update();
+}
+start().catch(() => {
+  status.textContent = "Der Städtekatalog konnte nicht geladen werden.";
+});
+</script>
+</html>

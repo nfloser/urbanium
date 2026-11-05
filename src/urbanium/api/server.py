@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 from urbanium.api.app import create_app
 from urbanium.core.provider import ObservationProvider
@@ -29,4 +30,11 @@ def create_runtime_app(cities_root: Path | None = None) -> FastAPI:
         vbb_config = load_vbb_gtfs_rt_config(config_path)
         providers.append(VbbGtfsRtProvider(vbb_config))
 
-    return create_app(registry, providers=providers)
+    app = create_app(registry, providers=providers)
+    dashboard = Path(__file__).with_name("dashboard") / "index.html"
+
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    def show_dashboard() -> HTMLResponse:
+        return HTMLResponse(dashboard.read_text(encoding="utf-8"))
+
+    return app
