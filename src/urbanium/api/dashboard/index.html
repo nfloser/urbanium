@@ -15,6 +15,7 @@ article {border:1px solid GrayText;border-radius:.6rem;padding:1rem;overflow-wra
 article h3 {margin:0}
 .measurement {border-top:1px solid GrayText;padding-top:.75rem;margin-top:.75rem}
 .value {display:block;font-size:2rem;font-weight:700}
+pre {overflow:auto;max-height:22rem}
 footer {margin-top:2rem}
 </style>
 <main>
@@ -29,6 +30,12 @@ footer {margin-top:2rem}
 <h2>Datenquellen</h2>
 <p id="status" role="status">Städte werden geladen …</p>
 <section id="cards" aria-label="Datenquellen"></section>
+<section id="evidence-panel" hidden>
+  <h2>Quellen und Analyse</h2>
+  <p>Prüft, welche Daten für eine gemeinsame Auswertung vorliegen.</p>
+  <button id="inspect" type="button">Quellen prüfen</button>
+  <div id="evidence" aria-live="polite"></div>
+</section>
 <noscript>Der Stadtmonitor benötigt JavaScript.</noscript>
 <footer><a href="./api/v1/docs">API in Swagger öffnen</a></footer>
 </main>
@@ -107,12 +114,70 @@ async function loadSource(card, city, capability, source, signal) {
   }
 }
 
+const evidencePanel = document.querySelector("#evidence-panel");
+const evidence = document.querySelector("#evidence");
+
+async function inspectEvidence() {
+  const {signal} = currentRequest;
+  const city = cities.get(citySelect.value);
+  const button = document.querySelector("#inspect");
+  button.disabled = true;
+  evidence.textContent = "Quellen werden geprüft …";
+  try {
+    const response = await fetch(
+      `./demo/cities/${encodeURIComponent(city.id)}/evidence`, {signal},
+    );
+    if (!response.ok) throw new Error("Evidence request failed");
+    const data = await response.json();
+    if (signal.aborted) return;
+    const run = data.readiness.run;
+    const readiness = run?.outputs[0]?.payload;
+    evidence.replaceChildren(node("h3", "Wetter und Nahverkehr"));
+    evidence.append(node("p", readiness?.both_sources_usable
+      ? "Beide Quellen liefern einzeln verwertbare Daten."
+      : "Die Quellen liefern derzeit keine vollständig verwertbare Datengrundlage."));
+    if (readiness?.closest_observation_gap_seconds != null) {
+      const minutes = Math.round(readiness.closest_observation_gap_seconds / 60);
+      evidence.append(node("p", `Kleinster Abstand der Datenzeitpunkte: ${minutes} Min.`));
+    }
+    evidence.append(node("p", "Die Prüfung belegt keinen räumlichen oder kausalen Zusammenhang."));
+    evidence.append(node("h3", "DWD-Wetterstation"));
+    if (data.station) {
+      const {latitude, longitude} = data.station.point;
+      evidence.append(node("p", `${data.station_name} · ${latitude}, ${longitude} · DWD-Stationsverzeichnis`));
+    } else {
+      evidence.append(node("p", data.station_error ?? "Keine Position im Stationsverzeichnis."));
+    }
+    evidence.append(node("h3", "Haltestellenbezüge in VBB-Meldungen"));
+    evidence.append(node("p", data.transport_status === "unavailable"
+      ? "VBB-Feed nicht verfügbar."
+      : `${data.alert_stop_reference_count} explizite Bezüge im Feed. Die Liste zeigt bis zu 100.`));
+    for (const ref of data.alert_stop_references) {
+      evidence.append(node("div", `Meldung ${ref.alert_id} · Haltestelle ${ref.stop_id}`));
+    }
+    const details = node("details", "");
+    details.append(node("summary", "Quellennachweise und Analyseprotokoll"), node("pre", JSON.stringify(data, null, 2)));
+    evidence.append(details);
+  } catch {
+    if (!signal.aborted) evidence.textContent = "Quellenprüfung konnte nicht geladen werden.";
+  } finally {
+    if (!signal.aborted) button.disabled = false;
+  }
+}
+
+document.querySelector("#inspect").addEventListener("click", inspectEvidence);
+
 async function update() {
   currentRequest?.abort();
   currentRequest = new AbortController();
   const {signal} = currentRequest;
   const city = cities.get(citySelect.value);
   cards.replaceChildren();
+  evidence.replaceChildren();
+  document.querySelector("#inspect").disabled = false;
+  evidencePanel.hidden = !["weather", "realtime_transport"].every(id =>
+    city.capabilities.some(capability => capability.id === id && capability.support === "configured"));
+
   status.textContent = `Daten für ${city.name} werden abgerufen …`;
   const reads = [];
   for (const capability of city.capabilities) {
