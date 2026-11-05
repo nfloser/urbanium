@@ -117,9 +117,7 @@ def assess_evidence(
         validate_provider_result(provider, result)
         if provider.capability_id != capability_id:
             raise ValueError("provider capability does not match requirement")
-        if any(
-            observation.received_at > prepared_time for observation in result.observations
-        ):
+        if any(observation.received_at > prepared_time for observation in result.observations):
             raise ValueError("evidence was prepared before its observations were received")
     except (KeyError, TypeError, ValueError):
         return EvidenceAssessment(
@@ -177,10 +175,7 @@ def assess_evidence(
             problems.append(
                 ComponentRunProblem(
                     code=f"{capability_id}_invalid_unit",
-                    message=(
-                        f"Expected unit '{requirement.unit}' "
-                        f"for '{requirement.quantity_id}'"
-                    ),
+                    message=(f"Expected unit '{requirement.unit}' for '{requirement.quantity_id}'"),
                 )
             )
             continue
