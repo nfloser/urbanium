@@ -26,4 +26,6 @@ jobs:
       - name: Mypy
         run: mypy src tests/contracts
       - name: Pytest
+        env:
+          PYTHONTZPATH: ""
         run: pytest
