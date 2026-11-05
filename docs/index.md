@@ -8,6 +8,7 @@ The documentation distinguishes implemented platform features from planned work.
 - [Capabilities and deployment support](concepts/capabilities.md)
 - [Deterministic components and capability resolution](concepts/components.md)
 - [Provider evidence in component inputs](concepts/provider-evidence-inputs.md)
+- [Evidence assessment and answerability](concepts/evidence-answerability.md)
 - [Versioned machine API](api/v1.md)
 - [Entities and relationships](concepts/entities-and-relationships.md)
 - [Evidence-backed entity point locations](concepts/spatial-evidence.md)
