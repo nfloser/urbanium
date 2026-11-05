@@ -15,6 +15,6 @@ if ($LASTEXITCODE -ne 0) { throw 'Urbanium installation failed.' }
 $env:URBANIUM_HOST = '127.0.0.1'
 $env:URBANIUM_PORT = '8000'
 $env:URBANIUM_CITIES = Join-Path $PWD 'cities'
-Write-Host 'Open http://127.0.0.1:8000/api/v1/docs once the server is running. Press Ctrl+C to stop.'
+Write-Host 'Open http://127.0.0.1:8000/ once the server is running. Press Ctrl+C to stop.'
 & $python -m urbanium.api
 exit $LASTEXITCODE

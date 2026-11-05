@@ -35,7 +35,7 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-urbanium = ["semantics/shapes/*.ttl"]
+urbanium = ["semantics/shapes/*.ttl", "api/dashboard/*.html"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

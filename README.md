@@ -51,6 +51,9 @@ in a virtual environment inside that copy.
 $dir = Join-Path $env:TEMP ([guid]::NewGuid().ToString()); New-Item -ItemType Directory $dir | Out-Null; $zip = Join-Path $dir 'urbanium.zip'; Invoke-WebRequest -UseBasicParsing 'https://github.com/nfloser/urbanium/archive/refs/heads/main.zip' -OutFile $zip; Expand-Archive $zip $dir; powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir 'urbanium-main/scripts/start-windows.ps1')
 ```
 
+Open the [live dashboard](http://127.0.0.1:8000/) after startup to choose a city
+and see live weather and transit alerts where supported.
+
 Open [the interactive API](http://127.0.0.1:8000/api/v1/docs) after startup.
 Try city discovery, then use the observation route with `mainz`,
 `dwd_open_data` and `weather` to request a real DWD reading.

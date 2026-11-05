@@ -99,6 +99,18 @@ def client(*providers: FixtureProvider) -> TestClient:
     return TestClient(create_app(registry, providers=providers))
 
 
+def test_runtime_serves_dashboard_without_adding_an_api_operation() -> None:
+    api = TestClient(create_runtime_app(CITIES))
+
+    response = api.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Stadtmonitor" in response.text
+    assert "./api/v1/cities" in response.text
+    assert "/" not in api.get("/api/v1/openapi.json").json()["paths"]
+
+
 def test_runtime_composition_loads_reference_provider_bindings_without_network() -> None:
     api = TestClient(create_runtime_app(CITIES))
 
