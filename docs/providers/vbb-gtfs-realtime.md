@@ -125,3 +125,14 @@ does not require the live feed to contain alerts, stop references or a
 version label. Passing this check establishes only that one current
 response was readable; it does not verify static GTFS compatibility,
 coverage, upstream reliability or transport impacts. Normal CI skips it.
+
+## Berlin dashboard
+
+The observation API exposes separate counts of alert, trip-update and vehicle-position
+entries from one snapshot. These are feed entity counts, with the snapshot timestamp
+and freshness shared across them. Zero means the feed contained no entries of that
+type. It does not establish network-wide coverage or an absence of incidents.
+
+The dashboard also displays DWD temperatures. Static VBB stops, DWD station locations,
+alert stop references and the weather/transport readiness analysis are available in
+code but are not yet wired into the dashboard.

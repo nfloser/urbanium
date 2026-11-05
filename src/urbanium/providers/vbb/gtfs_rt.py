@@ -115,7 +115,7 @@ class VbbGtfsRtProvider:
         return str(self.config.endpoint).rstrip("/")
 
     def read(self) -> ProviderResult:
-        """Preserve the canonical count-only provider contract."""
+        """Return the canonical feed counts."""
 
         return self.read_snapshot().result
 
@@ -173,27 +173,33 @@ class VbbGtfsRtProvider:
             message.ParseFromString(payload)
             if not message.IsInitialized():
                 raise ValueError("GTFS-Realtime feed is missing required fields")
-            alert_count = sum(1 for entity in message.entity if entity.HasField("alert"))
             observed_at, freshness, quality_code, degraded_error = self._snapshot_time(
                 message,
                 received_at,
             )
-            observation = Observation(
-                city_id=self.config.city_id,
-                source_id=self.config.source_id,
-                capability_id="realtime_transport",
-                entity=EntityReference(
+            observations = tuple(
+                Observation(
                     city_id=self.config.city_id,
-                    entity_type="transport_network",
-                    entity_id="vbb_network",
-                ),
-                quantity_id="active_service_alerts",
-                value=Decimal(alert_count),
-                unit="1",
-                observed_at=observed_at,
-                received_at=received_at,
-                quality_scheme="gtfs_rt_snapshot_time",
-                quality_code=quality_code,
+                    source_id=self.config.source_id,
+                    capability_id="realtime_transport",
+                    entity=EntityReference(
+                        city_id=self.config.city_id,
+                        entity_type="transport_network",
+                        entity_id="vbb_network",
+                    ),
+                    quantity_id=quantity,
+                    value=Decimal(sum(entity.HasField(field) for entity in message.entity)),
+                    unit="1",
+                    observed_at=observed_at,
+                    received_at=received_at,
+                    quality_scheme="gtfs_rt_snapshot_time",
+                    quality_code=quality_code,
+                )
+                for field, quantity in (
+                    ("alert", "active_service_alerts"),
+                    ("trip_update", "trip_update_entries"),
+                    ("vehicle", "vehicle_position_entries"),
+                )
             )
             stop_references = _alert_stop_references(message)
             version = (
@@ -214,14 +220,14 @@ class VbbGtfsRtProvider:
             result = ProviderResult(
                 availability=Availability.DEGRADED,
                 freshness=freshness,
-                observations=(observation,),
+                observations=observations,
                 error=degraded_error,
             )
         else:
             result = ProviderResult(
                 availability=Availability.AVAILABLE,
                 freshness=freshness,
-                observations=(observation,),
+                observations=observations,
             )
         return VbbAlertSnapshot(
             result=result, stop_references=stop_references, feed_version=version

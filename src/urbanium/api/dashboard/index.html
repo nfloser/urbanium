@@ -42,7 +42,8 @@ const capabilityNames = {
   river_level: "Pegelstand", open_data_catalog: "Open Data",
 };
 const quantityNames = {
-  air_temperature: "Lufttemperatur", active_service_alerts: "Aktive Verkehrsmeldungen",
+  air_temperature: "Lufttemperatur", active_service_alerts: "Störungsmeldungen im Feed",
+  trip_update_entries: "Fahrtupdates im Feed", vehicle_position_entries: "Fahrzeugpositionen im Feed",
 };
 const availability = {available: "Verfügbar", degraded: "Eingeschränkt", unavailable: "Nicht verfügbar"};
 const freshness = {fresh: "Aktuell", stale: "Veraltet", unknown: "Aktualität unbekannt"};
@@ -67,9 +68,13 @@ function renderObservation(observation, dateFormat) {
   const value = String(observation.value).replace(".", ",");
   row.append(node("div", name), node("strong", [value, unit].filter(Boolean).join(" "), "value"));
   if (observation.quantity_id === "active_service_alerts") {
-    row.append(node("small", "Anzahl der Meldungen im Feed, unabhängig von ihrer Schwere."));
+    row.append(node("small", "Der Feed kann unvollständig sein. Null Einträge erlauben keine Aussage über Störungen."));
   }
-  row.append(node("div", `Messzeit · ${dateFormat.format(new Date(observation.observed_at))}`));
+  const isFeedCount = observation.quality_scheme === "gtfs_rt_snapshot_time";
+  const timeLabel = isFeedCount
+    ? observation.quality_code === "receipt_fallback" ? "Abrufzeit" : "Feed-Zeit"
+    : "Messzeit";
+  row.append(node("div", `${timeLabel} · ${dateFormat.format(new Date(observation.observed_at))}`));
   return row;
 }
 
