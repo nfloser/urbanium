@@ -58,7 +58,9 @@ def _observation(
         capability_id=capability,
         entity=EntityReference(
             city_id="berlin",
-            entity_type="weather_station" if capability == "weather" else "transport_network",
+            entity_type=(
+                "weather_station" if capability == "weather" else "transport_network"
+            ),
             entity_id="synthetic",
         ),
         quantity_id=quantity,
@@ -202,7 +204,9 @@ def test_malformed_evidence_does_not_echo_unvalidated_provider_data() -> None:
     assert assessment.usable is False
     assert assessment.has_measurements is False
     assert assessment.snapshot == {"usable": False, "validated_observations": []}
-    assert [problem.code for problem in assessment.problems] == ["weather_invalid_evidence"]
+    assert [problem.code for problem in assessment.problems] == [
+        "weather_invalid_evidence"
+    ]
 
 
 def test_answerability_reports_missing_required_evidence_explicitly() -> None:
