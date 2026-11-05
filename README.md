@@ -41,6 +41,23 @@ The first [weather/transport source-readiness component](docs/concepts/weather-t
 
 A persistent last-known-good state store is not implemented yet. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
 
+## Try the full runtime on Windows
+
+With Python 3.12 and the Windows Python Launcher (`py.exe`) installed, paste this
+into PowerShell. It downloads a fresh copy from GitHub and installs Urbanium
+in a virtual environment inside that copy.
+
+```powershell
+$dir = Join-Path $env:TEMP ([guid]::NewGuid().ToString()); New-Item -ItemType Directory $dir | Out-Null; $zip = Join-Path $dir 'urbanium.zip'; Invoke-WebRequest -UseBasicParsing 'https://github.com/nfloser/urbanium/archive/refs/heads/main.zip' -OutFile $zip; Expand-Archive $zip $dir; powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir 'urbanium-main/scripts/start-windows.ps1')
+```
+
+Open [the interactive API](http://127.0.0.1:8000/api/v1/docs) after startup.
+Try city discovery, then use the observation route with `mainz`,
+`dwd_open_data` and `weather` to request a real DWD reading.
+For component runs and semantic projections, see the Python examples in
+the [component documentation](docs/concepts/components.md) and
+[semantic projection guide](docs/ontology/rdf-projection.md).
+
 ## Browser demo
 
 [Try Urbanium / Testen](https://nfloser.github.io/urbanium/)
