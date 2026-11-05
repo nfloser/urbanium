@@ -247,15 +247,15 @@ def assess_answerability(
         raise ValueError(f"duplicate evidence requirement capabilities: {names}")
 
     by_capability: dict[str, EvidenceAssessment] = {}
-    for assessment in assessments:
-        if assessment.capability_id in by_capability:
-            raise ValueError(f"duplicate evidence assessment '{assessment.capability_id}'")
-        by_capability[assessment.capability_id] = assessment
+    for candidate in assessments:
+        if candidate.capability_id in by_capability:
+            raise ValueError(f"duplicate evidence assessment '{candidate.capability_id}'")
+        by_capability[candidate.capability_id] = candidate
 
     items: list[AnswerabilityItem] = []
     for requirement in ordered_requirements:
-        assessment = by_capability.get(requirement.capability_id)
-        if assessment is None:
+        selected = by_capability.get(requirement.capability_id)
+        if selected is None:
             items.append(
                 AnswerabilityItem(
                     capability_id=requirement.capability_id,
@@ -268,9 +268,9 @@ def assess_answerability(
         items.append(
             AnswerabilityItem(
                 capability_id=requirement.capability_id,
-                usable=assessment.usable,
-                has_measurements=assessment.has_measurements,
-                problem_codes=tuple(problem.code for problem in assessment.problems),
+                usable=selected.usable,
+                has_measurements=selected.has_measurements,
+                problem_codes=tuple(problem.code for problem in selected.problems),
             )
         )
 
