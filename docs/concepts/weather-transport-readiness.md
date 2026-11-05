@@ -17,7 +17,9 @@ through `observation_input` (or conform to its documented evidence contract):
 - `realtime_transport@1`: canonical `active_service_alerts` in unit `1`,
   expressed as non-negative whole numbers.
 
-The component checks the source binding against the **selected city**,
+The component declares those two measurement requirements through the shared
+[evidence assessment and answerability](evidence-answerability.md) boundary.
+That pre-flight checks the source binding against the **selected city**,
 validates the canonical provider result, and rejects a missing or malformed
 evidence envelope, including a preparation time earlier than any observation's
 receipt time **or later than the component's execution time**. The boundary is
