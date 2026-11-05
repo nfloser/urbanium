@@ -14,6 +14,7 @@ dependencies = [
   "PyYAML>=6,<7",
   "pyshacl>=0.40,<0.41",
   "rdflib>=7.3,<8",
+  "tzdata>=2025.2",
   "uvicorn>=0.54,<1",
 ]
 
