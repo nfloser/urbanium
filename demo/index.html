@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Urbanium · Stadtvergleich</title>
+<style>
+  :root { color-scheme: light dark; font: 1rem/1.55 system-ui, sans-serif; }
+  body { margin: 0; }
+  main { max-width: 64rem; margin: auto; padding: 2.5rem 1.25rem; }
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin: 0; }
+  header p { max-width: 62ch; }
+  fieldset, article { border: 1px solid GrayText; border-radius: .6rem; padding: 1rem; }
+  label { display: block; margin: .5rem 0; }
+  select, button { font: inherit; padding: .4rem .65rem; }
+  #results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 1rem; }
+  article h3 { margin-top: 0; }
+  article ul { padding-left: 1.2rem; }
+  footer { margin-top: 2rem; }
+</style>
+<script src="./explorer.js" defer></script>
+<main>
+  <header>
+    <small>URBANIUM / BROWSER-DEMO</small>
+    <h1>Was kann Urbanium pro Stadt abfragen?</h1>
+    <p>Wähle eine Funktion und vergleiche, welche Quellen die Städte dafür hinterlegt haben.
+      Starte mit dem Nahverkehr, um den Unterschied zwischen Berlin und Mainz zu sehen.</p>
+  </header>
+  <fieldset id="controls" disabled>
+    <legend>Abfrage</legend>
+    <label for="capability">Funktion</label>
+    <select id="capability"></select>
+    <div id="cities"></div>
+    <button id="download" type="button" disabled>Ergebnis als JSON speichern</button>
+  </fieldset>
+  <h2>Ergebnis</h2>
+  <p id="status" role="status">Stadtkatalog wird geladen …</p>
+  <section id="results" aria-label="Stadtvergleich"></section>
+  <noscript>Der Stadtvergleich benötigt JavaScript.</noscript>
+  <footer>
+    <p>Die Demo verwendet den Katalogstand des veröffentlichten Builds.
+      Der Status beschreibt die Konfiguration. Aktuelle Messwerte und Quellenverfügbarkeit
+      lassen sich über die laufende Urbanium-API prüfen.</p>
+    <a href="https://github.com/nfloser/urbanium">Urbanium auf GitHub</a>
+  </footer>
+</main>
