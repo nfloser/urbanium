@@ -133,6 +133,9 @@ entries from one snapshot. These are feed entity counts, with the snapshot times
 and freshness shared across them. Zero means the feed contained no entries of that
 type. It does not establish network-wide coverage or an absence of incidents.
 
-The dashboard also displays DWD temperatures. Static VBB stops, DWD station locations,
-alert stop references and the weather/transport readiness analysis are available in
-code but are not yet wired into the dashboard.
+The dashboard also displays DWD temperatures. Under **Quellen und Analyse**,
+Berlin can run the weather/transport readiness check and inspect the DWD
+station reference point and the first 100 explicit alert stop selectors.
+The analysis protocol preserves the underlying evidence and data gaps.
+Static VBB stop coordinates, individual trips and RDF validation remain
+separate from this dashboard view.

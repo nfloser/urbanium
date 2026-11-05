@@ -17,6 +17,9 @@ from urbanium.core.provider import (
     ProviderErrorCode,
     ProviderResult,
 )
+from urbanium.providers.dwd.air_temperature import DwdCdcAirTemperatureProvider
+from urbanium.providers.dwd.station_location import DwdCdcStationLocationProvider
+from urbanium.providers.vbb.gtfs_rt import VbbAlertSnapshot, VbbGtfsRtProvider
 from urbanium.registry import CityRegistry
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -109,6 +112,24 @@ def test_runtime_serves_dashboard_without_adding_an_api_operation() -> None:
     assert "Stadtmonitor" in response.text
     assert "./api/v1/cities" in response.text
     assert "/" not in api.get("/api/v1/openapi.json").json()["paths"]
+
+
+def test_demo_evidence_preserves_provider_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(DwdCdcAirTemperatureProvider, "read", lambda _: unavailable_result())
+    monkeypatch.setattr(DwdCdcStationLocationProvider, "read", lambda _: None)
+    monkeypatch.setattr(
+        VbbGtfsRtProvider, "read_snapshot", lambda _: VbbAlertSnapshot(unavailable_result(), ())
+    )
+    api = TestClient(create_runtime_app(CITIES))
+
+    response = api.get("/demo/cities/berlin/evidence")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["station"] is None
+    assert body["transport_status"] == "unavailable"
+    assert body["readiness"]["run"]["status"] == "unavailable"
+    assert api.get("/demo/cities/mainz/evidence").status_code == 404
 
 
 def test_runtime_composition_loads_reference_provider_bindings_without_network() -> None:
