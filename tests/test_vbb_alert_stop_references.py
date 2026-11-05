@@ -169,5 +169,5 @@ def test_snapshot_fetches_once_and_existing_read_contract_remains_numeric() -> N
 
     result = _provider(_feed()).read()
     assert result.availability is Availability.AVAILABLE
-    assert len(result.observations) == 1
+    assert len(result.observations) == 3
     assert result.observations[0].quantity_id == "active_service_alerts"

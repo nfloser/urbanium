@@ -91,7 +91,12 @@ def test_alert_entities_are_normalized_as_a_numeric_mobility_observation() -> No
 
     assert result.availability is Availability.AVAILABLE
     assert result.freshness is Freshness.FRESH
-    assert len(result.observations) == 1
+    assert len(result.observations) == 3
+    assert {item.quantity_id: int(item.value) for item in result.observations} == {
+        "active_service_alerts": 3,
+        "trip_update_entries": 1,
+        "vehicle_position_entries": 0,
+    }
 
     observation = result.observations[0]
     assert observation.city_id == "berlin"
