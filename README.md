@@ -65,7 +65,7 @@ the [component documentation](docs/concepts/components.md) and
 
 [Try Urbanium / Testen](https://nfloser.github.io/urbanium/)
 
-Explore the Berlin and Mainz city catalog directly in your browser. The demo
+Compare Berlin and Mainz by capability and export the result as JSON. The demo
 shows the capabilities and source configurations from the published build.
 For live observations, [run the API locally](docs/api/v1.md#run-locally).
 
