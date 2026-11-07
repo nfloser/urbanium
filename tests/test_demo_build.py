@@ -30,8 +30,7 @@ def test_browser_demo_bundle_matches_canonical_registry(tmp_path: Path) -> None:
 
     catalog = json.loads((output / "catalog.json").read_text(encoding="utf-8"))
     expected = [
-        city.model_dump(mode="json")
-        for city in CityRegistry.from_directory(root / "cities").cities
+        city.model_dump(mode="json") for city in CityRegistry.from_directory(root / "cities").cities
     ]
     assert catalog == expected
     assert catalog, "The published demo must contain at least one configured city"
