@@ -34,3 +34,64 @@ def test_browser_demo_bundle_matches_canonical_registry(tmp_path: Path) -> None:
     ]
     assert catalog == expected
     assert catalog, "The published demo must contain at least one configured city"
+
+
+def test_browser_comparison_filters_cities_and_sources() -> None:
+    """Exercise the browser's actual comparison function without external services."""
+    import shutil
+
+    import pytest
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is required for the browser behavior regression check")
+
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
+
+const context = {
+  document: { querySelector: () => ({}) },
+  fetch: () => Promise.reject(new Error("offline test fixture")),
+};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(process.argv[1], "utf8"), context);
+
+const cities = [
+  {
+    id: "berlin", name: "Berlin",
+    capabilities: [{id: "weather", support: "configured"}],
+    sources: [
+      {provider: "dwd", capabilities: ["weather"]},
+      {provider: "vbb", capabilities: ["realtime_transport"]},
+    ],
+  },
+  {
+    id: "mainz", name: "Mainz",
+    capabilities: [{id: "weather", support: "candidate"}],
+    sources: [{provider: "other", capabilities: ["weather"]}],
+  },
+];
+const compare = (selected, capability) => JSON.parse(JSON.stringify(
+  vm.runInContext("compare", context)(cities, new Set(selected), capability),
+));
+
+assert.deepStrictEqual(compare(["berlin"], "weather"), [{
+  city_id: "berlin", city_name: "Berlin",
+  capability: {id: "weather", support: "configured"},
+  sources: [{provider: "dwd", capabilities: ["weather"]}],
+}]);
+assert.deepStrictEqual(compare(["mainz"], "realtime_transport"), [{
+  city_id: "mainz", city_name: "Mainz", capability: null, sources: [],
+}]);
+assert.deepStrictEqual(compare([], "weather"), []);
+"""
+    subprocess.run(
+        [node, "-e", script, str(root / "demo" / "explorer.js")],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
