@@ -95,3 +95,49 @@ assert.deepStrictEqual(compare([], "weather"), []);
         capture_output=True,
         text=True,
     )
+
+
+
+def test_browser_demo_reports_catalog_load_failure() -> None:
+    """A failed catalog request must produce an explicit user-facing error."""
+    import shutil
+
+    import pytest
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is required for the browser behavior regression check")
+
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
+
+const nodes = new Map();
+const context = {
+  document: {
+    querySelector: (selector) => {
+      if (!nodes.has(selector)) nodes.set(selector, {});
+      return nodes.get(selector);
+    },
+  },
+  fetch: () => Promise.reject(new Error("offline test fixture")),
+};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(process.argv[1], "utf8"), context);
+
+setImmediate(() => {
+  assert.equal(
+    nodes.get("#status").textContent,
+    "Der Stadtkatalog konnte nicht geladen werden. Bitte lade die Seite neu.",
+  );
+});
+"""
+    subprocess.run(
+        [node, "-e", script, str(root / "demo" / "explorer.js")],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
