@@ -97,7 +97,6 @@ assert.deepStrictEqual(compare([], "weather"), []);
     )
 
 
-
 def test_browser_demo_reports_catalog_load_failure() -> None:
     """A failed catalog request must produce an explicit user-facing error."""
     import shutil
