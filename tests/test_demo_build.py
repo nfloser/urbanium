@@ -140,3 +140,90 @@ setImmediate(() => {
         capture_output=True,
         text=True,
     )
+
+
+def test_browser_demo_exports_selected_catalog_snapshot() -> None:
+    """The download must reflect the selected capability and city, not live data."""
+    import shutil
+
+    import pytest
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is required for the browser behavior regression check")
+
+    root = Path(__file__).resolve().parents[1]
+    script = r"""
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
+
+const nodes = new Map();
+const downloads = [];
+let exportedText;
+const makeNode = () => ({
+  children: [],
+  listeners: {},
+  append(...children) { this.children.push(...children); },
+  replaceChildren(...children) { this.children = children; },
+  add(option) { this.children.push(option); },
+  addEventListener(event, callback) { this.listeners[event] = callback; },
+  querySelectorAll(selector) {
+    assert.equal(selector, "input:checked");
+    return this.children.flatMap((label) =>
+      label.children.filter((child) => child.type === "checkbox" && child.checked));
+  },
+  click() { downloads.push({href: this.href, filename: this.download}); },
+});
+const document = {
+  querySelector(selector) {
+    if (!nodes.has(selector)) nodes.set(selector, makeNode());
+    return nodes.get(selector);
+  },
+  createElement: () => makeNode(),
+};
+const context = {
+  document,
+  Option: function(label, value) { return {label, value}; },
+  fetch: async () => ({
+    ok: true,
+    json: async () => [
+      {id: "berlin", name: "Berlin",
+       capabilities: [{id: "weather", support: "configured"}],
+       sources: [{provider: "dwd", capabilities: ["weather"]}]},
+      {id: "mainz", name: "Mainz",
+       capabilities: [{id: "weather", support: "candidate"}],
+       sources: []},
+    ],
+  }),
+  Blob: function(parts, options) {
+    exportedText = parts.join("");
+    assert.equal(options.type, "application/json");
+  },
+  URL: {createObjectURL: () => "blob:test", revokeObjectURL: () => {}},
+  setTimeout: () => {},
+};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(process.argv[1], "utf8"), context);
+
+setImmediate(() => {
+  const cityLabels = nodes.get("#cities").children;
+  cityLabels[1].children[0].checked = false;
+  nodes.get("#cities").listeners.change();
+  nodes.get("#download").listeners.click();
+  const payload = JSON.parse(exportedText);
+  assert.equal(payload.mode, "catalog_snapshot");
+  assert.equal(payload.capability_id, "weather");
+  assert.equal(payload.results.length, 1);
+  assert.equal(payload.results[0].city_id, "berlin");
+  assert.equal(payload.results[0].sources[0].provider, "dwd");
+  assert.deepStrictEqual(downloads, [{href: "blob:test", filename: "urbanium-weather.json"}]);
+});
+"""
+    subprocess.run(
+        [node, "-e", script, str(root / "demo" / "explorer.js")],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
