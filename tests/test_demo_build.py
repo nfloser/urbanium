@@ -166,7 +166,10 @@ const makeNode = () => ({
   listeners: {},
   append(...children) { this.children.push(...children); },
   replaceChildren(...children) { this.children = children; },
-  add(option) { this.children.push(option); },
+  add(option) {
+    if (this.value === undefined) this.value = option.value;
+    this.children.push(option);
+  },
   addEventListener(event, callback) { this.listeners[event] = callback; },
   querySelectorAll(selector) {
     assert.equal(selector, "input:checked");
