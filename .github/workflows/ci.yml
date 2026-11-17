@@ -26,4 +26,4 @@ jobs:
       - name: Mypy
         run: mypy src tests/contracts
       - name: Pytest
-        run: pytest
+        run: pytest -ra
