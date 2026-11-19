@@ -1,6 +1,7 @@
 """Regression checks for the generated, static city-comparison demo."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -44,7 +45,7 @@ def test_browser_comparison_filters_cities_and_sources() -> None:
 
     node = shutil.which("node")
     if node is None:
-        if __import__("os").environ.get("CI") == "true":
+        if os.environ.get("CI") == "true":
             pytest.fail("Node.js is required for browser regression tests in CI")
         pytest.skip("Node.js is required for the browser behavior regression check")
 
@@ -107,7 +108,7 @@ def test_browser_demo_reports_catalog_load_failure() -> None:
 
     node = shutil.which("node")
     if node is None:
-        if __import__("os").environ.get("CI") == "true":
+        if os.environ.get("CI") == "true":
             pytest.fail("Node.js is required for browser regression tests in CI")
         pytest.skip("Node.js is required for the browser behavior regression check")
 
@@ -154,7 +155,7 @@ def test_browser_demo_exports_selected_catalog_snapshot() -> None:
 
     node = shutil.which("node")
     if node is None:
-        if __import__("os").environ.get("CI") == "true":
+        if os.environ.get("CI") == "true":
             pytest.fail("Node.js is required for browser regression tests in CI")
         pytest.skip("Node.js is required for the browser behavior regression check")
 
