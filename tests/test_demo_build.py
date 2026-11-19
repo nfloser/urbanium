@@ -44,6 +44,8 @@ def test_browser_comparison_filters_cities_and_sources() -> None:
 
     node = shutil.which("node")
     if node is None:
+        if __import__("os").environ.get("CI") == "true":
+            pytest.fail("Node.js is required for browser regression tests in CI")
         pytest.skip("Node.js is required for the browser behavior regression check")
 
     root = Path(__file__).resolve().parents[1]
@@ -105,6 +107,8 @@ def test_browser_demo_reports_catalog_load_failure() -> None:
 
     node = shutil.which("node")
     if node is None:
+        if __import__("os").environ.get("CI") == "true":
+            pytest.fail("Node.js is required for browser regression tests in CI")
         pytest.skip("Node.js is required for the browser behavior regression check")
 
     root = Path(__file__).resolve().parents[1]
@@ -150,6 +154,8 @@ def test_browser_demo_exports_selected_catalog_snapshot() -> None:
 
     node = shutil.which("node")
     if node is None:
+        if __import__("os").environ.get("CI") == "true":
+            pytest.fail("Node.js is required for browser regression tests in CI")
         pytest.skip("Node.js is required for the browser behavior regression check")
 
     root = Path(__file__).resolve().parents[1]
