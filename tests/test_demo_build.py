@@ -228,6 +228,12 @@ setImmediate(() => {
   assert.equal(payload.results[0].city_id, "berlin");
   assert.equal(payload.results[0].sources[0].provider, "dwd");
   assert.deepStrictEqual(downloads, [{href: "blob:test", filename: "urbanium-weather.json"}]);
+
+  cityLabels[0].children[0].checked = false;
+  nodes.get("#cities").listeners.change();
+  assert.equal(nodes.get("#download").disabled, true);
+  assert.equal(nodes.get("#status").textContent, "Wähle mindestens eine Stadt aus.");
+  assert.equal(nodes.get("#results").children.length, 0);
 });
 """
     subprocess.run(
