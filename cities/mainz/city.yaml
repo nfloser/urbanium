@@ -18,7 +18,7 @@ capabilities:
     notes: A Mainz-specific realtime transport interface requires dedicated verification.
   - id: river_level
     support: configured
-    notes: The official Mainz/Rhein gauge is available through PEGELONLINE.
+    notes: Rhine gauges inside the city area, including Mainz, are discovered through PEGELONLINE.
   - id: open_data_catalog
     support: candidate
     notes: Mainz is modernizing its WebGIS/geodata platform during 2026; API contracts remain to be verified.
@@ -37,18 +37,20 @@ sources:
       terms_url: https://www.dwd.de/DE/leistungen/opendata/hilfe.html
       redistribution: permitted
       notes: Attribution and notice requirements apply to DWD CDC data.
-  - id: pegelonline_mainz
-    provider: Wasserstraßen- und Schifffahrtsverwaltung des Bundes
+  - id: pegelonline
+    provider: Wasserstraßen- und Schifffahrtsverwaltung des Bundes (PEGELONLINE)
     domain: water
     protocol: https
     status: verified
     authority: authoritative
     capabilities: [river_level]
-    endpoint: https://pegelonline.wsv.de/gast/stammdaten?pegelnr=25100100
+    endpoint: https://www.pegelonline.wsv.de/webservices/rest-api/v2/
     update_frequency: near-realtime
     license:
-      redistribution: unknown
-      notes: Terms must be verified before stored observations are redistributed.
+      identifier: DL-DE->Zero-2.0
+      terms_url: https://www.pegelonline.wsv.de/gast/nutzungsbedingungen
+      redistribution: permitted
+      notes: Raw, unchecked gauge values; WSV excludes liability for accuracy and timeliness.
   - id: mainz_webgis_2026
     provider: Landeshauptstadt Mainz
     domain: open_data

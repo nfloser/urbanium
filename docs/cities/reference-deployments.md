@@ -8,18 +8,18 @@ Berlin and Mainz are the first portability tests for Urbanium. The current files
 |---|---|---|
 | weather | configured | configured |
 | realtime_transport | configured | candidate |
-| river_level | unknown | configured |
+| river_level | configured | configured |
 | open_data_catalog | configured | candidate |
 
 The asymmetry is intentional. A configured capability means the deployment has a verified source boundary in the registry, not that a current observation exists.
 
 ## Berlin
 
-The initial registry records DWD weather, VBB GTFS-Realtime and the Berlin Open Data catalogue as verified source boundaries. Dataset-specific licences and live provider health remain separate concerns.
+The registry records DWD weather, PEGELONLINE water levels, VBB GTFS-Realtime and the Berlin Open Data catalogue as verified source boundaries. Weather stations and Spree/Havel gauges are discovered inside the declared city area. Dataset-specific licences and live provider health remain separate concerns.
 
 ## Mainz
 
-The initial registry records DWD weather and the official PEGELONLINE Mainz/Rhein gauge as verified source boundaries. Realtime transport remains a candidate pending dedicated interface/terms verification. The Mainz WebGIS/geodata modernization is recorded as a candidate integration rather than treated as a stable API contract before verification.
+The registry records DWD weather and PEGELONLINE water levels as verified source boundaries; the Rhine gauge at Mainz is found through area discovery rather than hard-coded. Realtime transport remains a candidate pending dedicated interface/terms verification. The Mainz WebGIS/geodata modernization is recorded as a candidate integration rather than treated as a stable API contract before verification.
 
 ## Portability criterion
 

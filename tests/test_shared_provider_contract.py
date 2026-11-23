@@ -110,7 +110,7 @@ def test_shared_contract_rejects_observation_provenance_mismatch() -> None:
         ProviderResult(
             availability=Availability.AVAILABLE,
             freshness=Freshness.FRESH,
-            observations=(observation(source_id="pegelonline_mainz"),),
+            observations=(observation(source_id="pegelonline"),),
         )
     )
     with pytest.raises(ValueError, match="does not match provider descriptor"):
