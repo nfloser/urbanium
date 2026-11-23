@@ -12,6 +12,16 @@ area:
 
 The area is a search envelope, not an administrative boundary. Being inside it does not make a point part of the city, and it does not imply that a source covers the surrounding space.
 
+## Surroundings
+
+Some cities contain too few stations for comparisons (Mainz and Köln have one DWD station each). An area may therefore declare `surroundings_km` (0 to 50). Discovery then searches the area grown by that distance on every side, but every entity found in the ring stays marked as surroundings:
+
+- the relation is `located_near` the discovery area, not `located_in`;
+- the twin snapshot sets `in_surroundings: true`;
+- the explorer draws the ring, lightens its markers and says "im Umland" wherever such an entity is used, for example "zwischen 3 Stationen (davon 2 im Umland)".
+
+Agents stay city-independent and use whatever stations the read contains; the surroundings flag is how clients keep the city and its surroundings apart.
+
 ## Why discovery exists
 
 Without discovery, every deployment had to name individual station ids by hand (for example one DWD station per city). That ties the data model to whoever wrote the YAML and does not scale to "any city that publishes the data".

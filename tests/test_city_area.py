@@ -82,3 +82,24 @@ def test_area_is_optional_so_existing_definitions_remain_valid() -> None:
 
     assert minimal.area is None
     assert city.area is not None
+
+
+def test_surroundings_extend_the_search_envelope_but_not_the_area() -> None:
+    subject = area(surroundings_km=10)
+    envelope = subject.search_envelope
+    ring_point = Wgs84Point(latitude=52.75, longitude=13.4)  # ~5.6 km north of the area
+
+    assert not subject.contains(ring_point)
+    assert envelope.contains(ring_point)
+    assert subject.in_surroundings(ring_point)
+    assert not subject.in_surroundings(Wgs84Point(latitude=52.5, longitude=13.4))
+    assert not envelope.contains(Wgs84Point(latitude=52.9, longitude=13.4))
+    assert envelope.north - subject.north == pytest.approx(10 / 111.32, rel=1e-3)
+    assert envelope.surroundings_km == 0
+    assert envelope.covering_radius_km > subject.covering_radius_km
+
+
+def test_without_surroundings_the_envelope_is_the_area() -> None:
+    subject = area()
+
+    assert subject.search_envelope == subject

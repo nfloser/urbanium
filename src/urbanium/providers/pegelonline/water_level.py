@@ -99,12 +99,13 @@ class PegelonlineGaugeDiscovery:
     def url(self, city: CityDefinition) -> str:
         if city.area is None:
             raise ValueError("PEGELONLINE discovery requires a city area")
-        center = city.area.center
+        envelope = city.area.search_envelope
+        center = envelope.center
         query = urlencode(
             {
                 "latitude": f"{center.latitude:.5f}",
                 "longitude": f"{center.longitude:.5f}",
-                "radius": str(ceil(city.area.covering_radius_km) + 1),
+                "radius": str(ceil(envelope.covering_radius_km) + 1),
                 "includeTimeseries": "true",
                 "includeCurrentMeasurement": "true",
             }
@@ -114,7 +115,7 @@ class PegelonlineGaugeDiscovery:
     def discover(self, city: CityDefinition) -> DiscoveryResult:
         if city.id != self.city_id or city.area is None:
             raise ValueError("PEGELONLINE discovery requires its own city with a declared area")
-        area = city.area
+        area = city.area.search_envelope
         try:
             payload = self._fetcher(self.url(city), self._timeout)
         except TimeoutError:

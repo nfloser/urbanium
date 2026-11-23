@@ -83,6 +83,8 @@ class TwinEntity(BaseModel):
     series: list[tuple[datetime, str]] = Field(default_factory=list)
     # Set when the values come from an earlier snapshot because this run got none.
     carried_over_from: datetime | None = None
+    # In the optional ring around the city area rather than in the area itself.
+    in_surroundings: bool = False
 
 
 class TwinLayer(BaseModel):
@@ -187,7 +189,7 @@ def build_city_snapshot(
     entities: list[TwinEntity] = []
     inputs: dict[str, CapabilityInput] = {}
     for binding, discovery, descriptor, result in reads:
-        views = _entities(binding, discovery, result, completed_at)
+        views = _entities(city, binding, discovery, result, completed_at)
         if discovery.status is DiscoveryStatus.UNAVAILABLE:
             views = carry.layer(binding)
         else:
@@ -422,6 +424,7 @@ def _layer(
 
 
 def _entities(
+    city: CityDefinition,
     binding: AreaBinding,
     discovery: DiscoveryResult,
     result: ProviderResult | None,
@@ -456,6 +459,7 @@ def _entities(
                 longitude=item.location.point.longitude,
                 attributes=item.attributes,
                 evidence=list(item.location.evidence),
+                in_surroundings=bool(city.area and city.area.in_surroundings(item.location.point)),
                 freshness=freshness,
                 latest=(
                     LatestValue(

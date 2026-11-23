@@ -136,8 +136,11 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
 
         page.click("#cities button[data-city=mainz]")
         page.click("button[data-view=map]")
-        page.wait_for_selector(".insight.unanswered")
-        assert "mindestens drei" in page.inner_text("#insights")
+        # Mainz reaches three stations only with its surroundings, and says so.
+        page.wait_for_selector(".mk.ring")
+        insights = page.inner_text("#insights")
+        assert "Stadt und Umland" in insights
+        assert "davon 2 im Umland" in insights
 
         assert not errors
         browser.close()

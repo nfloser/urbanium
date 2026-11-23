@@ -39,6 +39,9 @@ class CityArea(BaseModel):
     west: float = Field(ge=-180, le=180, allow_inf_nan=False)
     north: float = Field(ge=-90, le=90, allow_inf_nan=False)
     east: float = Field(ge=-180, le=180, allow_inf_nan=False)
+    # Optional ring around the area that discovery also searches. Entities in
+    # it are reported as being in the surroundings, never as in the city.
+    surroundings_km: float = Field(default=0, ge=0, le=50, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def validate_orientation(self) -> Self:
@@ -52,6 +55,24 @@ class CityArea(BaseModel):
         return (
             self.south <= point.latitude <= self.north and self.west <= point.longitude <= self.east
         )
+
+    @property
+    def search_envelope(self) -> "CityArea":
+        """The area grown by `surroundings_km` on every side (itself without a ring)."""
+
+        if self.surroundings_km == 0:
+            return self
+        dlat = self.surroundings_km / 111.32
+        dlon = self.surroundings_km / (111.32 * max(cos(radians(self.center.latitude)), 0.01))
+        return CityArea(
+            south=max(-90.0, self.south - dlat),
+            west=max(-180.0, self.west - dlon),
+            north=min(90.0, self.north + dlat),
+            east=min(180.0, self.east + dlon),
+        )
+
+    def in_surroundings(self, point: Wgs84Point) -> bool:
+        return not self.contains(point) and self.search_envelope.contains(point)
 
     @property
     def center(self) -> Wgs84Point:

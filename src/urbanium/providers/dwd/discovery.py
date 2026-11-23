@@ -96,6 +96,7 @@ class DwdStationDiscovery:
         if city.id != self.config.city_id or city.area is None:
             raise ValueError("DWD discovery requires its own city with a declared area")
         area = city.area
+        envelope = area.search_envelope
 
         try:
             payload = self._fetcher(DWD_NOW_STATION_LIST_URL, self._timeout)
@@ -120,7 +121,7 @@ class DwdStationDiscovery:
                 record = parse_inventory_record(columns)
             except DwdStationMetadataError:
                 continue
-            if record.end < active_since or not area.contains(record.point):
+            if record.end < active_since or not envelope.contains(record.point):
                 continue
             if record.station_id in candidates:
                 ambiguous.add(record.station_id)  # duplicate rows: trust neither

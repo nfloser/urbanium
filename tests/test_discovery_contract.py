@@ -160,3 +160,13 @@ def test_unavailable_discovery_carries_an_error_and_no_entities() -> None:
 def test_duplicate_entities_are_rejected() -> None:
     with pytest.raises(ValidationError, match="duplicate"):
         result(entity(), entity())
+
+
+def test_entities_in_the_surroundings_are_accepted_but_not_beyond() -> None:
+    raw = city().model_dump(mode="json")
+    raw["area"]["surroundings_km"] = 10
+    with_ring = CityDefinition.model_validate(raw)
+
+    validate_discovery_result(with_ring, result(entity(latitude=50.25)))
+    with pytest.raises(ValueError, match="outside the city area"):
+        validate_discovery_result(with_ring, result(entity(latitude=50.4)))

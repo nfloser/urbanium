@@ -153,3 +153,18 @@ def test_unavailable_discoveries_contribute_nothing() -> None:
     relations = derive_relations(BERLIN, (STATIONS, down), asserted_at=NOW)
 
     assert {item.assertion.predicate for item in relations} == {"located_in"}
+
+
+def test_entities_in_the_surroundings_are_near_the_area_not_in_it() -> None:
+    raw = BERLIN.model_dump(mode="json")
+    raw["area"]["surroundings_km"] = 15
+    with_ring = BERLIN.model_validate(raw)
+    outside = discovery(
+        "dwd_open_data",
+        item("weather_station", "dwd_station_05825", 52.25, 13.40, "dwd_open_data"),
+    )
+
+    relations = derive_relations(with_ring, (outside,), asserted_at=NOW)
+
+    assert [r.assertion.predicate for r in relations] == ["located_near"]
+    assert relations[0].method == "point_in_surroundings"
