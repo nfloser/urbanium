@@ -1,0 +1,81 @@
+[
+  {
+    "uuid": "09e15cf6-f155-4b76-b92f-6c260839121c",
+    "number": "5803200",
+    "shortname": "MÜHLENDAMM UP",
+    "longname": "BERLIN-MÜHLENDAMM UP",
+    "km": 17.6,
+    "agency": "SPREE-HAVEL",
+    "longitude": 13.4085,
+    "latitude": 52.5133,
+    "water": {"shortname": "SPREE-ODER-WASSERSTRASSE", "longname": "SPREE-ODER-WASSERSTRASSE"},
+    "timeseries": [
+      {
+        "shortname": "W",
+        "longname": "WASSERSTAND ROHDATEN",
+        "unit": "cm",
+        "equidistance": 15,
+        "currentMeasurement": {
+          "timestamp": "2026-11-23T09:45:00+01:00",
+          "value": 337.0,
+          "stateMnwMhw": "normal",
+          "stateNswHsw": "normal"
+        },
+        "gaugeZero": {"unit": "m. ü. NHN", "value": 30.0, "validFrom": "2019-11-01"}
+      }
+    ]
+  },
+  {
+    "uuid": "6a5c4b3e-2f1d-4c0b-9a8e-7d6c5b4a3f2e",
+    "number": "5865000",
+    "shortname": "SPANDAU UP",
+    "longname": "SPANDAU UP",
+    "km": 0.6,
+    "agency": "SPREE-HAVEL",
+    "longitude": 13.2120,
+    "latitude": 52.5386,
+    "water": {"shortname": "HAVEL", "longname": "UNTERE HAVEL-WASSERSTRASSE"},
+    "timeseries": [
+      {
+        "shortname": "W",
+        "longname": "WASSERSTAND ROHDATEN",
+        "unit": "cm",
+        "equidistance": 15,
+        "currentMeasurement": {"timestamp": "2026-11-23T09:45:00+01:00", "value": 224.0, "stateMnwMhw": "low", "stateNswHsw": "normal"}
+      },
+      {"shortname": "Q", "longname": "ABFLUSS", "unit": "m3/s", "equidistance": 15}
+    ]
+  },
+  {
+    "uuid": "1f2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b",
+    "number": "5830010",
+    "shortname": "DISCHARGE ONLY",
+    "longname": "DISCHARGE ONLY",
+    "agency": "SPREE-HAVEL",
+    "longitude": 13.30,
+    "latitude": 52.45,
+    "water": {"shortname": "TELTOWKANAL", "longname": "TELTOWKANAL"},
+    "timeseries": [{"shortname": "Q", "longname": "ABFLUSS", "unit": "m3/s", "equidistance": 15}]
+  },
+  {
+    "uuid": "aa2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b",
+    "number": "5940000",
+    "shortname": "OUTSIDE",
+    "longname": "OUTSIDE THE AREA",
+    "agency": "SPREE-HAVEL",
+    "longitude": 12.95,
+    "latitude": 52.40,
+    "water": {"shortname": "HAVEL", "longname": "HAVEL"},
+    "timeseries": [{"shortname": "W", "longname": "WASSERSTAND ROHDATEN", "unit": "cm", "equidistance": 15}]
+  },
+  {
+    "uuid": "not-a-uuid",
+    "number": "5999999",
+    "shortname": "BROKEN",
+    "longname": "BROKEN",
+    "longitude": 13.4,
+    "latitude": 52.5,
+    "water": {"shortname": "SPREE", "longname": "SPREE"},
+    "timeseries": [{"shortname": "W", "unit": "cm"}]
+  }
+]

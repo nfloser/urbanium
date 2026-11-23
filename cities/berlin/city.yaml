@@ -17,8 +17,8 @@ capabilities:
     support: configured
     notes: VBB publishes GTFS-Realtime for Berlin/Brandenburg.
   - id: river_level
-    support: unknown
-    notes: No Berlin river-level provider has been selected for the initial registry.
+    support: configured
+    notes: Federal waterway gauges inside the city area are discovered through PEGELONLINE.
   - id: open_data_catalog
     support: configured
     notes: Berlin operates a central open-data catalogue with machine-readable metadata.
@@ -51,6 +51,20 @@ sources:
       terms_url: https://unternehmen.vbb.de/digitale-services/datensaetze/
       redistribution: permitted
       notes: Attribution requirements remain with the upstream feed.
+  - id: pegelonline
+    provider: Wasserstraßen- und Schifffahrtsverwaltung des Bundes (PEGELONLINE)
+    domain: water
+    protocol: https
+    status: verified
+    authority: authoritative
+    capabilities: [river_level]
+    endpoint: https://www.pegelonline.wsv.de/webservices/rest-api/v2/
+    update_frequency: near-realtime
+    license:
+      identifier: DL-DE->Zero-2.0
+      terms_url: https://www.pegelonline.wsv.de/gast/nutzungsbedingungen
+      redistribution: permitted
+      notes: Raw, unchecked gauge values; WSV excludes liability for accuracy and timeliness.
   - id: berlin_open_data
     provider: Land Berlin
     domain: open_data

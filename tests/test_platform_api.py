@@ -159,7 +159,7 @@ def test_versioned_city_capability_and_source_discovery() -> None:
     sources = api.get("/api/v1/cities/mainz/sources")
     assert sources.status_code == 200
     source_ids = [item["id"] for item in sources.json()["sources"]]
-    assert source_ids == ["dwd_open_data", "mainz_webgis_2026", "pegelonline_mainz"]
+    assert source_ids == ["dwd_open_data", "mainz_webgis_2026", "pegelonline"]
 
 
 def test_unknown_city_is_a_stable_machine_readable_problem() -> None:
