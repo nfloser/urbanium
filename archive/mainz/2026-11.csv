@@ -195,3 +195,7 @@ mainz:river_gauge:pegelonline_25100300,water_level,2026-11-23T16:00:00Z,199.0,cm
 mainz:river_gauge:pegelonline_25100300,water_level,2026-11-23T17:00:00Z,199.0,cm
 mainz:river_gauge:pegelonline_25100300,water_level,2026-11-23T18:00:00Z,199.0,cm
 mainz:river_gauge:pegelonline_25100300,water_level,2026-11-23T19:00:00Z,199.0,cm
+mainz:weather_station:dwd_station_01420,air_temperature,2026-11-23T19:00:00Z,-2.5,Cel
+mainz:weather_station:dwd_station_01580,air_temperature,2026-11-23T19:00:00Z,-1.1,Cel
+mainz:weather_station:dwd_station_03137,air_temperature,2026-11-23T19:00:00Z,-1.0,Cel
+mainz:weather_station:dwd_station_05541,air_temperature,2026-11-23T19:00:00Z,-2.5,Cel
