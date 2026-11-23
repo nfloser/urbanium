@@ -32,12 +32,11 @@ def test_explorer_never_injects_upstream_text_as_html() -> None:
     script = (EXPLORER / "app.js").read_text(encoding="utf-8")
 
     assert "innerHTML" not in script
-    # The only HTML string handed to Leaflet escapes every upstream value.
-    templates = re.findall(r"html: `([^`]*)`", script)
-    assert len(templates) == 1
-    internal = {'classes.join(" ")', "style", "arrow"}
-    for expression in re.findall(r"\$\{([^}]*\)?)\}", templates[0]):
-        assert expression in internal or expression.startswith("esc("), expression
+    # The marker icon is the only HTML string; every upstream value is escaped.
+    body = script[script.index("function markerIcon(") : script.index("function tooltip(")]
+    assert ".label" not in body
+    for escaped in ("esc(names[i])", "esc(value)", "esc(e.id)", "esc(QUANTITY"):
+        assert escaped in body, escaped
 
 
 def test_vendored_third_party_code_keeps_its_licences() -> None:

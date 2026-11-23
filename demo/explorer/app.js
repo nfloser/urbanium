@@ -412,19 +412,15 @@ function renderInsights() {
           { class: "insight" },
           h("h3", {}, "Pegel in den letzten sechs Stunden"),
           h("p", {}, moving ? `${moving} von ${gauges.length} Pegeln bewegen sich deutlich.` : `Alle ${gauges.length} Pegel sind weitgehend gleichbleibend.`),
-          h(
-            "ul",
-            {},
-            gauges.map((g) =>
-              h(
-                "li",
-                {},
-                h("span", { class: "trend-" + g.trend, "aria-hidden": "true" }, TREND_ARROW[g.trend] + " "),
-                entityButton(g.entity),
-                g.change === null ? `: ${TREND[g.trend]}` : `: ${signed(g.change)} cm, ${TREND[g.trend]}`,
-              ),
-            ),
-          ),
+          h("ul", {}, gauges.filter((g) => g.trend !== "steady").map(trendItem)),
+          gauges.some((g) => g.trend === "steady")
+            ? h(
+                "details",
+                { class: "more" },
+                h("summary", {}, `${gauges.filter((g) => g.trend === "steady").length} gleichbleibende Pegel`),
+                h("ul", {}, gauges.filter((g) => g.trend === "steady").map(trendItem)),
+              )
+            : null,
           trendRun.run.problems.length ? h("p", { class: "hint" }, problemText(trendRun)) : null,
           howBlock(trendRun, [["Regel", `Letzter Wert minus Messwert von vor ${out.window_hours} Stunden (±${out.tolerance_minutes} Minuten). Ab ${out.threshold_cm} cm steigend oder fallend.`]]),
         ),
@@ -434,6 +430,16 @@ function renderInsights() {
     }
   }
   host.replaceChildren(...blocks);
+}
+
+function trendItem(g) {
+  return h(
+    "li",
+    {},
+    h("span", { class: "trend-" + g.trend, "aria-hidden": "true" }, TREND_ARROW[g.trend] + " "),
+    entityButton(g.entity),
+    g.change === null ? `: ${TREND[g.trend]}` : `: ${signed(g.change)} cm, ${TREND[g.trend]}`,
+  );
 }
 
 function renderCredits() {
@@ -460,12 +466,13 @@ function ensureMap() {
   }).addTo(state.map);
   state.map.attributionControl.setPrefix(false);
   state.overlays = L.layerGroup().addTo(state.map);
+  state.map.on("zoomend", () => setTimeout(declutter, 0));
   // Keyboard selection is handled here rather than relying on Leaflet's
   // keypress-to-click translation, which does not fire for these markers.
   document.getElementById("map").addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     const host = event.target.closest && event.target.closest(".mk-host");
-    const label = host && host.querySelector("[data-entity]");
+    const label = host && (host.querySelector(".part.current + .sep + [data-entity]") || host.querySelector("[data-entity]"));
     if (!label) return;
     event.preventDefault();
     select(label.dataset.entity, { toggle: false });
@@ -502,46 +509,122 @@ function renderMap() {
     }
   }
 
-  for (const entity of twin.entities) {
-    if (state.hidden.has(entity.capability_id)) continue;
-    const marker = L.marker([entity.latitude, entity.longitude], {
-      icon: markerIcon(entity),
+  for (const group of siteGroups(twin.entities.filter((e) => !state.hidden.has(e.capability_id)))) {
+    const lead = group[0];
+    const lat = group.reduce((sum, e) => sum + e.latitude, 0) / group.length;
+    const lon = group.reduce((sum, e) => sum + e.longitude, 0) / group.length;
+    const marker = L.marker([lat, lon], {
+      icon: markerIcon(group),
       keyboard: true,
-      title: `${entity.label}: ${valueText(entity)}`,
+      title: group.map((e) => `${e.label}: ${valueText(e)}`).join(", "),
       riseOnHover: true,
     });
-    marker.bindTooltip(() => tooltip(entity), { className: "tip", direction: "top", offset: [6, -10], opacity: 1 });
-    marker.on("click", () => select(entity.id, { toggle: false }));
+    marker.bindTooltip(() => h("div", {}, group.map(tooltip)), { className: "tip", direction: "top", offset: [6, -10], opacity: 1 });
+    marker.on("click", (event) => {
+      const part = event.originalEvent && event.originalEvent.target.closest && event.originalEvent.target.closest("[data-entity]");
+      select(part ? part.dataset.entity : lead.id, { toggle: false });
+    });
     marker.addTo(state.overlays);
-    state.markers.set(entity.id, marker);
+    for (const e of group) state.markers.set(e.id, marker);
+    marker._urbaniumGroup = group;
   }
 
   if (cityChanged && area) {
     map.invalidateSize();
-    map.fitBounds([[area.south, area.west], [area.north, area.east]], { padding: [24, 24], animate: false });
+    map.fitBounds([[area.south, area.west], [area.north, area.east]], { paddingTopLeft: [90, 24], paddingBottomRight: [70, 24], animate: false });
   }
-  setTimeout(() => map.invalidateSize(), 0);
+  setTimeout(() => {
+    map.invalidateSize();
+    declutter();
+  }, 0);
+}
+
+/* Entities closer than this share one label, e.g. the upper and lower gauge of a lock. */
+const SITE_METRES = 400;
+
+function metres(a, b) {
+  const rad = Math.PI / 180;
+  const x = (b.longitude - a.longitude) * rad * Math.cos(((a.latitude + b.latitude) / 2) * rad);
+  const y = (b.latitude - a.latitude) * rad;
+  return Math.hypot(x, y) * 6371000;
+}
+
+function siteGroups(entities) {
+  const groups = [];
+  for (const entity of entities) {
+    const group = groups.find((g) => g[0].entity_type === entity.entity_type && g.every((other) => metres(other, entity) < SITE_METRES));
+    if (group) group.push(entity);
+    else groups.push([entity]);
+  }
+  return groups.map((g) => g.sort((a, b) => a.label.localeCompare(b.label, "de")));
+}
+
+/* Short distinguishing part of names in one group: "BERLIN-SPANDAU OP" and "… UP" give "OP", "UP". */
+function partNames(group) {
+  const words = group.map((e) => e.label.split(/\s+/));
+  let common = 0;
+  while (words.every((w) => w.length > common + 1 && w[common] === words[0][common])) common++;
+  const parts = words.map((w) => w.slice(common).join(" "));
+  return parts.every((p) => p && p.length <= 12) && new Set(parts).size === parts.length ? parts : group.map((_, i) => String(i + 1));
+}
+
+/* Hide the text of labels that would overlap a more important one; symbols always stay. */
+function declutter() {
+  if (!state.map) return;
+  const seen = new Set();
+  const items = [];
+  for (const marker of state.markers.values()) {
+    if (seen.has(marker)) continue;
+    seen.add(marker);
+    const el = marker.getElement();
+    const label = el && el.querySelector(".mk");
+    if (!label) continue;
+    label.classList.remove("muted");
+    const group = marker._urbaniumGroup || [];
+    const selected = group.some((e) => e.id === state.selected);
+    const trend = group.map((e) => trendFor(e.id)).find((t) => t && (t.trend === "rising" || t.trend === "falling"));
+    const rank = selected ? 0 : group[0] && group[0].entity_type === "weather_station" ? 1 : trend ? 2 : 3;
+    const sym = label.querySelector(".sym");
+    items.push({ label, rank, rect: label.getBoundingClientRect(), sym: sym ? sym.getBoundingClientRect() : null });
+  }
+  items.sort((a, b) => a.rank - b.rank || a.rect.top - b.rect.top || a.rect.left - b.rect.left);
+  const overlaps = (r, p) => r.left < p.right + 2 && r.right > p.left - 2 && r.top < p.bottom + 1 && r.bottom > p.top - 1;
+  // Symbols always stay visible, so every other marker's symbol is an obstacle.
+  const symbols = items.filter((item) => item.sym);
+  const placed = [];
+  for (const item of items) {
+    const r = item.rect;
+    const hit = placed.some((p) => overlaps(r, p)) || symbols.some((other) => other !== item && overlaps(r, other.sym));
+    if (hit) item.label.classList.add("muted");
+    else placed.push(r);
+  }
 }
 
 function canonical(ref) {
   return `${ref.city_id}:${ref.entity_type}:${ref.entity_id}`;
 }
 
-function markerIcon(entity) {
+function markerIcon(group) {
+  const entity = group[0];
   const classes = ["mk", entity.entity_type === "river_gauge" ? "mk-gauge" : "mk-temp"];
-  if (entity.freshness === "stale") classes.push("stale");
-  if (entity.freshness === "no_data") classes.push("nodata");
-  if (state.selected === entity.id) classes.push("selected");
+  if (group.every((e) => e.freshness === "stale")) classes.push("stale");
+  if (group.every((e) => e.freshness === "no_data")) classes.push("nodata");
+  if (group.some((e) => e.id === state.selected)) classes.push("selected");
   let style = "";
   if (entity.entity_type === "weather_station" && entity.latest) style = ` style="--c:${tempColor(entity.latest.value)}"`;
-  let arrow = "";
-  if (entity.entity_type === "river_gauge") {
-    const trend = trendFor(entity.id);
-    if (trend && trend.trend !== "unknown") arrow = ` <span class="arrow trend-${trend.trend}" aria-hidden="true">${TREND_ARROW[trend.trend]}</span>`;
-  }
+  const names = partNames(group);
+  const parts = group.map((e, i) => {
+    let arrow = "";
+    const trend = e.entity_type === "river_gauge" ? trendFor(e.id) : null;
+    if (trend && (trend.trend === "rising" || trend.trend === "falling")) arrow = ` <span class="arrow trend-${trend.trend}" aria-hidden="true">${TREND_ARROW[trend.trend]}</span>`;
+    const prefix = group.length > 1 ? `<span class="part-name">${esc(names[i])}</span> ` : "";
+    const value = group.length > 1 ? valueText(e, false) : valueText(e);
+    return `<span class="part${e.id === state.selected ? " current" : ""}" data-entity="${esc(e.id)}">${prefix}${esc(value)}${arrow}</span>`;
+  });
+  const unit = group.length > 1 && entity.latest ? `<span class="part-unit">${esc(QUANTITY[entity.latest.quantity_id] ? QUANTITY[entity.latest.quantity_id].unit : entity.latest.unit)}</span>` : "";
   return L.divIcon({
     className: "mk-host",
-    html: `<span class="${classes.join(" ")}" data-entity="${esc(entity.id)}"${style}>${esc(valueText(entity))}${arrow}</span>`,
+    html: `<span class="${classes.join(" ")}"${style}>${entity.entity_type === "river_gauge" ? "" : '<i class="sym"></i>'}${parts.join('<span class="sep" aria-hidden="true">/</span>')}${unit}${entity.entity_type === "river_gauge" ? '<i class="sym"></i>' : ""}</span>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
@@ -570,9 +653,9 @@ function select(id, { pan = false, toggle = true } = {}) {
     const hadFocus = document.activeElement && document.activeElement.classList.contains("mk-host");
     for (const changed of new Set([previous, id])) {
       const marker = changed && state.markers.get(changed);
-      const entity = changed && entityById(changed);
-      if (marker && entity) marker.setIcon(markerIcon(entity));
+      if (marker && marker._urbaniumGroup) marker.setIcon(markerIcon(marker._urbaniumGroup));
     }
+    declutter();
     const entity = entityById(id);
     const marker = state.markers.get(id);
     if (hadFocus && marker && marker.getElement()) marker.getElement().focus();
@@ -780,14 +863,25 @@ function renderGraph() {
   const columns = [["weather_station", "Wetterstationen"], ["river_gauge", "Pegel"], ["water_body", "Gewässer"]];
   const area = [...nodes.values()].find((n) => n.kind === "discovery_area");
   const layout = new Map();
-  const colX = (c) => W * [0.06, 0.38, 0.72][c];
-  const gaugeOrder = [...nodes.values()].filter((n) => n.kind === "river_gauge").sort((a, b) => a.label.localeCompare(b.label, "de")).map((n) => n.id);
-  const waterRank = (id) => {
-    const linked = twin.relations.filter((r) => r.assertion.predicate === "on_water_body" && canonical(r.assertion.object) === id).map((r) => gaugeOrder.indexOf(canonical(r.assertion.subject)));
-    return linked.length ? Math.min(...linked) : 999;
+  const colX = (c) => W * [0.06, 0.38, 0.7][c];
+  // Order columns to reduce crossings: gauges grouped by water body, water bodies
+  // by their first gauge, stations by the mean position of the gauges they serve.
+  const linked = (predicate) => twin.relations.filter((r) => r.assertion.predicate === predicate).map((r) => [canonical(r.assertion.subject), canonical(r.assertion.object)]);
+  const waterOf = new Map(linked("on_water_body"));
+  const gaugeOrder = [...nodes.values()].filter((n) => n.kind === "river_gauge")
+    .sort((a, b) => String(waterOf.get(a.id)).localeCompare(String(waterOf.get(b.id))) || a.label.localeCompare(b.label, "de"))
+    .map((n) => n.id);
+  const nearest = linked("nearest_weather_station");
+  const rank = (node) => {
+    if (node.kind === "river_gauge") return gaugeOrder.indexOf(node.id);
+    const peers = node.kind === "water_body"
+      ? [...waterOf].filter(([, w]) => w === node.id).map(([g]) => gaugeOrder.indexOf(g))
+      : nearest.filter(([, st]) => st === node.id).map(([g]) => gaugeOrder.indexOf(g));
+    if (!peers.length) return 1e6;
+    return node.kind === "water_body" ? Math.min(...peers) : peers.reduce((a, b) => a + b, 0) / peers.length;
   };
   columns.forEach(([kind], c) => {
-    const items = [...nodes.values()].filter((n) => n.kind === kind).sort((a, b) => (kind === "water_body" ? waterRank(a.id) - waterRank(b.id) : 0) || a.label.localeCompare(b.label, "de"));
+    const items = [...nodes.values()].filter((n) => n.kind === kind).sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label, "de"));
     const x = colX(c);
     const top = 70, bottom = Hgt - 90;
     items.forEach((n, i) => layout.set(n.id, { x, y: items.length === 1 ? (top + bottom) / 2 : top + (i * (bottom - top)) / (items.length - 1) }));
@@ -831,7 +925,8 @@ function renderGraph() {
         onkeydown: clickable ? (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(n.id); } } : null,
       },
       shape,
-      svg("text", { x: right ? 14 : -14, y: -1, "text-anchor": right ? "start" : "end" }, n.label),
+      svg("title", {}, n.label),
+      svg("text", { x: right ? 14 : -14, y: -1, "text-anchor": right ? "start" : "end" }, n.label.length > 26 ? n.label.slice(0, 25) + "…" : n.label),
       n.sub ? svg("text", { class: "sub", x: right ? 14 : -14, y: 14, "text-anchor": right ? "start" : "end" }, n.kind === "discovery_area" ? "alle Messstellen liegen darin" : n.sub) : null,
     );
   });

@@ -78,8 +78,10 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
 
         page.wait_for_selector(".mk")
         assert "Beispieldaten" in page.inner_text("#notice")
-        assert page.locator(".mk-temp").count() == 6
-        assert page.locator(".mk-gauge").count() == 3
+        # Every entity is reachable on the map, even where nearby gauges share a label.
+        assert page.locator(".mk-temp [data-entity]").count() == 6
+        assert page.locator(".mk-gauge [data-entity]").count() == 19
+        assert page.locator(".mk-gauge").count() < 19  # lock pairs are grouped
         assert "Temperaturunterschied" in page.inner_text("#insights")
 
         page.locator(".leaflet-marker-icon").first.focus()
@@ -88,6 +90,20 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
         assert "Herkunft" in page.inner_text("#detail")
         assert page.evaluate("document.activeElement.classList.contains('mk-host')")
         assert page.locator(".mk.selected").count() == 1
+        overlapping = page.evaluate(
+            """() => {
+              const r = [...document.querySelectorAll('.mk:not(.muted)')]
+                .map((e) => e.getBoundingClientRect());
+              let n = 0;
+              for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) {
+                const a = r[i], b = r[j];
+                const x = a.left < b.right && a.right > b.left;
+                if (x && a.top < b.bottom && a.bottom > b.top) n++;
+              }
+              return n;
+            }"""
+        )
+        assert overlapping == 0
 
         page.click("button[data-view=graph]")
         assert page.locator("#graph .node").count() >= 10

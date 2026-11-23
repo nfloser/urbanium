@@ -55,13 +55,33 @@ STATIONS = {
         (0.75, 0.30, "Beispielstation Nordwest", 6.5),
     ],
 }
+BERLIN_GAUGES = [
+    ("BERLIN-MÜHLENDAMM OP", 52.514460, 13.411460, "SPREE-ODER-WASSERSTRASSE", 337, 3),
+    ("BERLIN-MÜHLENDAMM UP", 52.514897, 13.408690, "SPREE-ODER-WASSERSTRASSE", 192, 2),
+    ("BERLIN-OBERSCHLEUSE UP", 52.497408, 13.448833, "LANDWEHRKANAL", 184, -1),
+    ("BERLIN-OBERSCHLEUSE OP", 52.498278, 13.449730, "LANDWEHRKANAL", 340, 4),
+    ("BERLIN-UNTERSCHLEUSE OP", 52.511402, 13.336519, "LANDWEHRKANAL", 205, 1),
+    ("BERLIN-UNTERSCHLEUSE UP", 52.511608, 13.335037, "LANDWEHRKANAL", 158, 0),
+    ("BERLIN-PLÖTZENSEE UP", 52.543036, 13.323859, "BERLIN-SPANDAUER-SCHIFFFAHRTSKANAL", 211, -2),
+    ("BERLIN-PLÖTZENSEE OP", 52.543700, 13.323142, "BERLIN-SPANDAUER-SCHIFFFAHRTSKANAL", 254, 1),
+    ("BERLIN-CHARLOTTENBURG OP", 52.531423, 13.292224, "SPREE-ODER-WASSERSTRASSE", 214, 0),
+    ("BERLIN-CHARLOTTENBURG UP", 52.530037, 13.282545, "SPREE-ODER-WASSERSTRASSE", 174, -6),
+    ("BERLIN-KÖPENICK", 52.429690, 13.573986, "SPREE-ODER-WASSERSTRASSE", 222, 7),
+    ("BERLIN-SPANDAU UP", 52.540064, 13.209346, "HAVEL-ODER-WASSERSTRASSE", 239, -9),
+    ("BERLIN-SPANDAU OP", 52.541856, 13.209042, "HAVEL-ODER-WASSERSTRASSE", 268, -2),
+    ("KLEINMACHNOW OP", 52.395689, 13.209949, "TELTOWKANAL", 312, 1),
+    ("KLEINMACHNOW UP", 52.395529, 13.207976, "TELTOWKANAL", 241, 0),
+    ("BERLIN-SCHMÖCKWITZ", 52.374398, 13.653581, "DAHME-WASSERSTRASSE", 181, 2),
+    ("WERNSDORF UP", 52.372628, 13.707554, "SPREE-ODER-WASSERSTRASSE", 202, 3),
+    ("WERNSDORF OP", 52.371176, 13.711208, "SPREE-ODER-WASSERSTRASSE", 361, 1),
+    ("SCHÖNWALDE OP", 52.607862, 13.088864, "HAVELKANAL", 296, 0),
+]
+
 # (city, offset, name, water, base level cm, change over 24 h cm)
-GAUGES = {
-    "berlin": [
-        (0.52, 0.47, "BEISPIELPEGEL SPREE MITTE", "SPREE-ODER-WASSERSTRASSE", 312, 4),
-        (0.58, 0.18, "BEISPIELPEGEL HAVEL", "UNTERE HAVEL-WASSERSTRASSE", 238, -9),
-        (0.30, 0.75, "BEISPIELPEGEL DAHME", "DAHME-WASSERSTRASSE", 181, 1),
-    ],
+GAUGES: dict[str, object] = {
+    # Berlin uses the published gauge positions (PEGELONLINE reference data,
+    # DL-DE->Zero-2.0) so the explorer is tested at real density. Levels stay invented.
+    "berlin": "real_positions",
     "mainz": [(0.62, 0.66, "BEISPIELPEGEL RHEIN", "RHEIN", 296, 22)],
     "hamburg": [
         (0.50, 0.42, "BEISPIELPEGEL ELBE HAFEN", "ELBE", 520, 140),
@@ -99,7 +119,20 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
             )
             archives[sid] = _archive(sid, base, phase=station_index * 0.7)
         stations_json[city.id] = []
-        for gauge_index, (fy, fx, name, water, level, change) in enumerate(GAUGES.get(city.id, [])):
+        gauges = GAUGES.get(city.id, [])
+        if gauges == "real_positions":
+            gauges = [
+                (
+                    (lat - area.south) / (area.north - area.south),
+                    (lon - area.west) / (area.east - area.west),
+                    name,
+                    water,
+                    level,
+                    change,
+                )
+                for name, lat, lon, water, level, change in BERLIN_GAUGES
+            ]
+        for gauge_index, (fy, fx, name, water, level, change) in enumerate(gauges):
             uuid = f"{city_index:08x}-0000-4000-8000-{gauge_index:012x}"
             stations_json[city.id].append(
                 {
@@ -109,8 +142,8 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
                     "longname": name,
                     "agency": "BEISPIEL",
                     "km": 10.0 + gauge_index * 3.5,
-                    "latitude": round(area.south + fy * (area.north - area.south), 5),
-                    "longitude": round(area.west + fx * (area.east - area.west), 5),
+                    "latitude": round(area.south + fy * (area.north - area.south), 6),
+                    "longitude": round(area.west + fx * (area.east - area.west), 6),
                     "water": {"shortname": water, "longname": water},
                     "timeseries": [
                         {

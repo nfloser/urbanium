@@ -106,6 +106,8 @@ a { color: var(--water); }
 .insight h3 { font: 600 0.95rem/1.3 var(--narrow); margin: 0 0 var(--s1); }
 .insight p { font-size: 0.92rem; }
 .insight.unanswered { border-left-color: var(--rule); color: var(--graphite); }
+.more { margin-top: var(--s2); font-size: 0.9rem; }
+.more summary { cursor: pointer; color: var(--graphite); }
 .insight ul { list-style: none; padding: 0; margin: var(--s2) 0 0; display: grid; gap: var(--s1); font-size: 0.9rem; }
 .entity-link {
   background: none; border: 0; padding: 0; cursor: pointer;
@@ -140,15 +142,21 @@ a { color: var(--water); }
 
 /* Values printed on the map, like a synoptic chart */
 .mk { position: absolute; left: -0.55rem; top: -0.5rem; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; font: 600 0.95rem/1 var(--narrow); color: var(--ink); text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff; }
-.mk::before { content: ""; flex: none; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--c, var(--stale)); border: 1.5px solid var(--ink); }
-.mk-gauge { left: auto; right: -0.55rem; flex-direction: row-reverse; }
-.mk-gauge::before { border-radius: 1px; transform: rotate(45deg) scale(0.86); background: var(--water); border-color: #0b3a63; }
+.mk-gauge { left: auto; right: -0.55rem; }
+.mk .sym { flex: none; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--c, var(--stale)); border: 1.5px solid var(--ink); }
+.mk-gauge .sym { border-radius: 1px; transform: rotate(45deg) scale(0.86); background: var(--water); border-color: #0b3a63; }
+.mk.selected .sym { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--ink); }
 .mk .arrow { font-size: 0.75rem; }
+.mk .part { display: inline-flex; align-items: baseline; gap: 0.2rem; cursor: pointer; }
+.mk .part-name { font-weight: 500; color: var(--graphite); }
+.mk .part.current { text-decoration: underline 2px; text-underline-offset: 3px; }
+.mk .sep { color: var(--stale); font-weight: 400; }
+.mk .part-unit { font-weight: 500; }
 .mk.stale { color: var(--graphite); }
-.mk.stale::before { background: #fff; border-style: dashed; border-color: var(--graphite); }
+.mk.stale .sym { background: #fff; border-style: dashed; border-color: var(--graphite); }
 .mk.nodata { color: var(--stale); font-weight: 500; }
-.mk.nodata::before { background: transparent; border-color: var(--stale); }
-.mk.selected::after { content: ""; position: absolute; left: -0.45rem; top: 50%; width: 1.7rem; height: 1.7rem; margin-top: -0.85rem; border: 2px solid var(--ink); border-radius: 50%; }
+.mk.nodata .sym { background: transparent; border-color: var(--stale); }
+.mk.muted > :not(.sym) { display: none; }
 .leaflet-marker-icon.mk-host { background: none; border: 0; width: 0 !important; height: 0 !important; overflow: visible; }
 .mk-gauge.selected::after { left: auto; right: -0.45rem; }
 .leaflet-tooltip.tip { font: 400 0.85rem/1.35 var(--sans); color: var(--ink); border: 1px solid var(--rule); border-radius: 3px; box-shadow: 0 2px 6px rgb(21 38 58 / 0.18); padding: var(--s2) var(--s3); }
