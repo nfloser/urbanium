@@ -28,3 +28,15 @@ The existing single-station binding (`dwd_air_temperature.yaml`) is unchanged an
 Every entity is `weather_station:dwd_station_<id>` with a `reference` location and evidence `zehn_min_tu_Beschreibung_Stationen.txt:<id>:<sha256 of inventory>`. Attributes carry the station id, elevation in metres, federal state where recognisable and the inventory end date.
 
 Transport failures, oversize or unreadable inventories make the discovery `unavailable` with `timeout`, `upstream` or `invalid_response`.
+
+## Reading the station network
+
+`urbanium.providers.dwd.network.DwdAirTemperatureNetworkProvider` reads every discovered station through the unchanged single-station adapter and combines the results into one `weather` read for the city's `dwd_open_data` source:
+
+- each station contributes its full `now` series (`DwdCdcAirTemperatureProvider.read_series()`), oldest first;
+- a station without usable values counts as failed and is named in the degraded error, never filled in;
+- partial rows inside a station keep the single-station diagnostics, prefixed with the station id;
+- no usable station at all makes the network `unavailable`;
+- freshness is `stale` as soon as one station's latest value is older than `freshness_minutes`.
+
+`read()` of the single-station adapter still returns only the latest value, so the existing API and dashboard behave as before.

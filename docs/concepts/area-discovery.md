@@ -32,5 +32,5 @@ Discovery says that an entity is published. Whether it currently delivers measur
 
 ## Adapters
 
-- [DWD station discovery](../providers/dwd-station-discovery.md) — 10-minute air-temperature stations from the DWD inventory.
+- [DWD station discovery](../providers/dwd-station-discovery.md) — 10-minute air-temperature stations from the DWD inventory, read together as a station network.
 - [PEGELONLINE water level](../providers/pegelonline-water-level.md) — federal waterway gauges.
