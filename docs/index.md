@@ -27,6 +27,7 @@ The documentation distinguishes implemented platform features from planned work.
 - [Add a city](cities/add-a-city.md)
 - [Reference architecture analysis](research/reference-architectures.md)
 - [Berlin/Mainz source landscape](research/source-landscape.md)
+- [Live checks](development/live-checks.md)
 - [Development roadmap](development/roadmap.md)
 - [Architecture decisions](adr/)
 
