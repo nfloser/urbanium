@@ -197,6 +197,11 @@ a { color: var(--water); }
 .cell-sub { display: block; font-size: 0.82rem; color: var(--graphite); }
 .cell-main.off { color: var(--stale); }
 .matrix button { font: 600 1rem var(--narrow); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+.cell-more { margin-top: var(--s1); font-size: 0.82rem; }
+.cell-more summary { cursor: pointer; color: var(--graphite); }
+.export-row { margin: calc(-1 * var(--s4)) 0 var(--s6); }
+.action { font: 600 0.95rem var(--narrow); background: var(--ink); color: var(--paper); border: 0; border-radius: 3px; padding: var(--s2) var(--s4); min-height: 2.5rem; cursor: pointer; }
+.action:hover { background: #24405f; }
 pre.yaml { background: var(--ink); color: #dfe8ee; padding: var(--s4); border-radius: 3px; overflow-x: auto; font: 0.85rem/1.5 ui-monospace, "SF Mono", Consolas, monospace; max-width: 46rem; }
 .steps { padding-left: 1.2rem; max-width: 62ch; }
 .steps li { margin-bottom: var(--s2); }

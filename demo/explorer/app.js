@@ -970,11 +970,21 @@ function renderCompare() {
           const declared = twin ? twin.city.capabilities.find((x) => x.id === cap) : null;
           const layer = c.layers.find((l) => l.capability_id === cap);
           if (!declared) return h("td", {}, h("span", { class: "cell-main off" }, "nicht angegeben"));
+          const sources = twin.city.sources.filter((src) => src.capabilities.includes(cap));
           return h(
             "td",
             {},
             h("span", { class: "cell-main" + (declared.support === "configured" ? "" : " off") }, SUPPORT[declared.support] || declared.support),
             layer ? h("span", { class: "cell-sub" }, `${layer.entity_count} Messstellen, ${AVAILABILITY[layer.availability]}`) : declared.support === "configured" ? h("span", { class: "cell-sub" }, "nicht im Twin-Snapshot") : null,
+            sources.length || declared.notes
+              ? h(
+                  "details",
+                  { class: "cell-more" },
+                  h("summary", {}, "Quellen und Hinweise"),
+                  sources.map((src) => h("span", { class: "cell-sub" }, `${src.provider} (${src.status === "verified" ? "geprüft" : "Kandidat"})`)),
+                  declared.notes ? h("span", { class: "cell-sub" }, declared.notes) : null,
+                )
+              : null,
           );
         }),
       );
@@ -993,6 +1003,12 @@ function renderCompare() {
         ),
       ),
       h(
+        "p",
+        { class: "export-row" },
+        h("button", { type: "button", class: "action", onclick: () => exportComparison(cities, caps, capabilities) }, "Vergleich als JSON speichern"),
+        h("span", { class: "hint" }, " Enthält Fähigkeiten, Quellen, Hinweise und die Abdeckung dieses Stands."),
+      ),
+      h(
         "section",
         {},
         h("h2", {}, "Eine Stadt hinzufügen"),
@@ -1008,6 +1024,45 @@ function renderCompare() {
       ),
     );
   });
+}
+
+function comparisonDocument(cities, twins, capabilities) {
+  return {
+    schema_id: "urbanium.city-comparison/1",
+    snapshot_generated_at: state.index.generated_at,
+    data_mode: state.index.data_mode,
+    note: "Registry support and snapshot coverage at the time of the snapshot; not a live health check.",
+    cities: cities.map((c) => {
+      const twin = twins.get(c.id);
+      return {
+        id: c.id,
+        name: c.name,
+        agents_answered: c.agents_answered,
+        agents_total: c.agents_total,
+        capabilities: capabilities.map((cap) => {
+          const declared = twin ? twin.city.capabilities.find((x) => x.id === cap) : null;
+          const layer = c.layers.find((l) => l.capability_id === cap) || null;
+          return {
+            id: cap,
+            support: declared ? declared.support : "not_declared",
+            notes: declared ? declared.notes || null : null,
+            sources: twin ? twin.city.sources.filter((s) => s.capabilities.includes(cap)).map((s) => ({ id: s.id, provider: s.provider, status: s.status, licence: s.license.identifier || null })) : [],
+            snapshot: layer ? { entity_count: layer.entity_count, availability: layer.availability, freshness: layer.freshness } : null,
+          };
+        }),
+      };
+    }),
+  };
+}
+
+function exportComparison(cities, twins, capabilities) {
+  const blob = new Blob([JSON.stringify(comparisonDocument(cities, twins, capabilities), null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = h("a", { href: url, download: `urbanium-staedtevergleich-${state.index.generated_at.slice(0, 10)}.json` });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function yamlExample(twin) {

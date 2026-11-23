@@ -8,7 +8,7 @@ A static client for Urbanium twin snapshots (`urbanium.twin-snapshot/1`). It run
 - **Erkenntnisse**: agent results in plain language (temperature difference across stations at one shared time, six-hour gauge trends), each with "Wie berechnet?" showing rule, inputs and run time. Unanswerable questions say why.
 - **Detail**: value, recent series, derived context, relationships, attributes and provenance (source, licence, record checksum, retrieval time).
 - **Wissensgraph**: stations, gauges, water bodies and the search area with every relationship; blue edges come from the source, ochre dashed edges are derived. The Turtle export of the same graph is one click away.
-- **Städte**: declared capabilities, live coverage and answerable analyses per city, plus the configuration that added Köln and Hamburg without code.
+- **Städte**: declared capabilities with their sources and configuration notes, snapshot coverage and answerable analyses per city, an export of the comparison as JSON (`urbanium.city-comparison/1`), plus the configuration that added Köln and Hamburg without code.
 
 ## Review a pull request
 
