@@ -35,7 +35,8 @@ urbanium-twin build --replay /tmp/urbanium-sample --out demo/explorer/data
 
 - The map reads like an authority's measurement chart rather than a dashboard: cool survey-paper background, ink-navy type, water blue for gauges and a fixed diverging temperature scale (−10 to 30 °C) so cities stay comparable.
 - Ochre is reserved for derived knowledge: agent results, derived relationships and the context they add. Anything ochre was computed, not measured.
-- Typeface: Barlow and Barlow Semi Condensed (SIL OFL), self-hosted together with Leaflet (BSD-2-Clause). Only basemap tiles (© OpenStreetMap contributors, © CARTO) load from a third party.
+- Typeface: Barlow and Barlow Semi Condensed (SIL OFL), self-hosted together with Leaflet (BSD-2-Clause) and protomaps-leaflet (BSD-3-Clause).
+- Basemap: the Pages workflow extracts each city's area from the newest Protomaps OpenStreetMap build (`demo/basemaps.py`, cached per month) and publishes it as `basemap/<city>.pmtiles`, rendered in the browser from byte ranges with no tile server. Data © OpenStreetMap contributors (ODbL). When a file is missing or the server cannot serve byte ranges (e.g. `python -m http.server`), the explorer falls back to CARTO raster tiles; the credit line follows the basemap in use.
 - Upstream text is only ever inserted as text, never as HTML.
 
 ## Checks

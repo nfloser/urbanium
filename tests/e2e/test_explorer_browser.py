@@ -33,7 +33,7 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def site(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
+def site_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
     root = tmp_path_factory.mktemp("site")
     recording = tmp_path_factory.mktemp("recording")
     archive = tmp_path_factory.mktemp("archive")
@@ -69,7 +69,12 @@ def site(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
         env=env,
         capture_output=True,
     )
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(root))
+    return root
+
+
+@pytest.fixture(scope="module")
+def site(site_root: Path) -> Iterator[str]:
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(site_root))
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -89,6 +94,8 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
 
         page.wait_for_selector(".mk")
         assert "Beispieldaten" in page.inner_text("#notice")
+        # The plain test server has no byte ranges and no extract: CARTO fallback.
+        page.wait_for_function("document.getElementById('map').dataset.basemap === 'carto'")
         # The map frames the discovered entities: they span most of its width.
         spread = page.evaluate(
             """() => {
@@ -159,3 +166,51 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
 
         assert not errors
         browser.close()
+
+
+class RangeHandler(http.server.SimpleHTTPRequestHandler):
+    """Static server with single byte-range support, like GitHub Pages."""
+
+    def end_headers(self) -> None:
+        self.send_header("Accept-Ranges", "bytes")
+        super().end_headers()
+
+    def do_GET(self) -> None:  # noqa: N802 - http.server API
+        header = self.headers.get("Range")
+        path = Path(self.translate_path(self.path))
+        if not header or not path.is_file():
+            super().do_GET()
+            return
+        data = path.read_bytes()
+        start_text, _, end_text = header.removeprefix("bytes=").partition("-")
+        start = int(start_text)
+        end = min(int(end_text) if end_text else len(data) - 1, len(data) - 1)
+        self.send_response(206)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Range", f"bytes {start}-{end}/{len(data)}")
+        self.send_header("Content-Length", str(end - start + 1))
+        self.end_headers()
+        self.wfile.write(data[start : end + 1])
+
+
+def test_self_hosted_basemap_is_used_when_ranges_are_served(site_root: Path) -> None:
+    basemap = site_root / "basemap"
+    basemap.mkdir(exist_ok=True)
+    shutil.copy(ROOT / "tests" / "fixtures" / "basemap" / "berlin.pmtiles", basemap)
+    handler = functools.partial(RangeHandler, directory=str(site_root))
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        with playwright.sync_playwright() as p:
+            browser = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
+            page = browser.new_page(viewport={"width": 1200, "height": 800})
+            errors: list[str] = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(f"http://127.0.0.1:{server.server_address[1]}/?city=berlin")
+            page.wait_for_function("document.getElementById('map').dataset.basemap === 'pmtiles'")
+            page.wait_for_selector(".leaflet-tile-pane canvas")
+            assert "Protomaps" in page.inner_text("#map-credit")
+            assert not errors
+            browser.close()
+    finally:
+        server.shutdown()

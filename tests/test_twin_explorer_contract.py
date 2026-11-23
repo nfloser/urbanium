@@ -42,6 +42,7 @@ def test_explorer_never_injects_upstream_text_as_html() -> None:
 def test_vendored_third_party_code_keeps_its_licences() -> None:
     assert (EXPLORER / "vendor" / "leaflet" / "LICENSE").is_file()
     assert (EXPLORER / "vendor" / "fonts" / "OFL.txt").is_file()
+    assert (EXPLORER / "vendor" / "protomaps-leaflet" / "LICENSE").is_file()
 
 
 def test_explorer_does_not_shadow_browser_globals() -> None:
