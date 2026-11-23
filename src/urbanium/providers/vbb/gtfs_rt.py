@@ -28,7 +28,9 @@ from urbanium.core.provider import (
     ProviderResult,
 )
 
-MAX_FEED_BYTES = 10_000_000
+# The full VBB feed (trip updates, vehicle positions, alerts) outgrew 10 MB;
+# the weekly live check of 2026-11-23 failed on it. 64 MB still bounds memory.
+MAX_FEED_BYTES = 64_000_000
 FetchBytes = Callable[[str, float], bytes]
 Clock = Callable[[], datetime]
 
@@ -305,7 +307,7 @@ def _fetch_bytes(url: str, timeout: float) -> bytes:
         with GzipFile(fileobj=BytesIO(payload)) as archive:
             payload = archive.read(MAX_FEED_BYTES + 1)
     if len(payload) > MAX_FEED_BYTES:
-        raise ValueError("VBB GTFS-RT feed exceeds size limit")
+        raise ValueError(f"VBB GTFS-RT feed exceeds size limit of {MAX_FEED_BYTES} bytes")
     return payload
 
 

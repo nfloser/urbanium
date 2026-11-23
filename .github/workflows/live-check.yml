@@ -8,9 +8,10 @@ on:
   schedule:
     - cron: "17 5 * * 1"
   workflow_dispatch:
-  # Validate changes to the live checks themselves before they are merged.
+  # Validate changes to adapters and to the live checks against the real sources.
   pull_request:
     paths:
+      - "src/urbanium/providers/**"
       - "tests/live/**"
       - ".github/workflows/live-check.yml"
 
