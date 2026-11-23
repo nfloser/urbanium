@@ -79,6 +79,16 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
 
         page.wait_for_selector(".mk")
         assert "Beispieldaten" in page.inner_text("#notice")
+        # The map frames the discovered entities: they span most of its width.
+        spread = page.evaluate(
+            """() => {
+              const xs = [...document.querySelectorAll('.mk .sym')]
+                .map((e) => e.getBoundingClientRect().left);
+              const map = document.getElementById('map').getBoundingClientRect();
+              return (Math.max(...xs) - Math.min(...xs)) / map.width;
+            }"""
+        )
+        assert spread > 0.6
         # Every entity is reachable on the map, even where nearby gauges share a label.
         assert page.locator(".mk-temp [data-entity]").count() == 6
         assert page.locator(".mk-gauge [data-entity]").count() == 19
