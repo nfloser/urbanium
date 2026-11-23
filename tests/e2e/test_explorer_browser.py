@@ -6,6 +6,7 @@ Skipped unless Playwright and a Chromium/Chrome binary are available
 
 import functools
 import http.server
+import json
 import os
 import re
 import shutil
@@ -123,6 +124,15 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
         page.click("button[data-view=compare]")
         page.wait_for_selector(".matrix")
         assert "Köln" in page.inner_text(".matrix")
+        with page.expect_download() as download_info:
+            page.get_by_role("button", name="Vergleich als JSON speichern").click()
+        exported = json.loads(Path(download_info.value.path()).read_text(encoding="utf-8"))
+        assert exported["schema_id"] == "urbanium.city-comparison/1"
+        assert exported["data_mode"] == "synthetic"
+        berlin = next(city for city in exported["cities"] if city["id"] == "berlin")
+        weather = next(cap for cap in berlin["capabilities"] if cap["id"] == "weather")
+        assert weather["sources"][0]["provider"] == "Deutscher Wetterdienst"
+        assert weather["snapshot"]["entity_count"] == 6
 
         page.click("#cities button[data-city=mainz]")
         page.click("button[data-view=map]")
