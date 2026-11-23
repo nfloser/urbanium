@@ -90,7 +90,7 @@ def validate_discovery_result(city: CityDefinition, result: DiscoveryResult) -> 
         raise ValueError(f"'{result.source_id}' is not a verified source of city '{city.id}'")
     for item in result.entities:
         location = item.location
-        if not city.area.contains(location.point):
+        if not city.area.search_envelope.contains(location.point):
             raise ValueError(f"entity '{location.entity.canonical_id}' lies outside the city area")
         if any(evidence.source_id != result.source_id for evidence in location.evidence):
             raise ValueError(

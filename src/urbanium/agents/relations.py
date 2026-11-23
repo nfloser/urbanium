@@ -4,6 +4,7 @@ Three kinds of edges are produced, each with the evidence it rests on:
 
 * `located_in` — an entity's sourced point lies in the city's discovery area
   (derived; the area is a search envelope, not a city boundary);
+* `located_near` — the point lies in the optional surroundings ring;
 * `on_water_body` — the gauge's water body as stated by the source
   (reference state, taken from the source record);
 * `nearest_weather_station` — the great-circle nearest discovered weather
@@ -51,18 +52,19 @@ def derive_relations(
     area = EntityReference(city_id=city.id, entity_type="discovery_area", entity_id=city.id)
     relations: list[DerivedRelation] = []
     for item in entities:
-        if city.area.contains(item.location.point):
+        inside = city.area.contains(item.location.point)
+        if inside or city.area.in_surroundings(item.location.point):
             relations.append(
                 DerivedRelation(
                     assertion=RelationshipAssertion(
                         subject=item.location.entity,
-                        predicate="located_in",
+                        predicate="located_in" if inside else "located_near",
                         object=area,
                         state_category=StateCategory.DERIVED,
                         asserted_at=asserted_at,
                         evidence=item.location.evidence,
                     ),
-                    method="point_in_area",
+                    method="point_in_area" if inside else "point_in_surroundings",
                     object_label=city.name,
                 )
             )

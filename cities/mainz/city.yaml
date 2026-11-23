@@ -9,6 +9,9 @@ area:
   west: 8.14
   north: 50.04
   east: 8.34
+  # Only one DWD station lies inside the city; nearby stations are searched
+  # in a 15 km ring and always reported as surroundings, never as the city.
+  surroundings_km: 15
 capabilities:
   - id: weather
     support: configured

@@ -42,7 +42,12 @@ STATIONS = {
         (0.18, 0.62, "Beispielstation Süd", 2.6),
         (0.55, 0.12, "Beispielstation West", 3.3),
     ],
-    "mainz": [(0.35, 0.40, "Beispielstation Mainz", 6.1)],
+    # Fractions outside 0..1 place a station in the surroundings ring.
+    "mainz": [
+        (0.35, 0.40, "Beispielstation Mainz", 6.1),
+        (1.35, 0.20, "Beispielstation Umland Nord", 5.4),
+        (-0.40, 0.75, "Beispielstation Umland Süd", 6.6),
+    ],
     "hamburg": [
         (0.52, 0.45, "Beispielstation Hafen", 6.4),
         (0.80, 0.55, "Beispielstation Nord", 5.2),

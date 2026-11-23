@@ -156,6 +156,7 @@ a { color: var(--water); }
 .mk.stale .sym { background: #fff; border-style: dashed; border-color: var(--graphite); }
 .mk.lastknown { color: var(--graphite); font-style: italic; }
 .mk.lastknown .sym { border-style: dashed; border-color: var(--graphite); opacity: 0.7; }
+.mk.ring { opacity: 0.72; }
 .mk.nodata { color: var(--stale); font-weight: 500; }
 .mk.nodata .sym { background: transparent; border-color: var(--stale); }
 .mk.muted > :not(.sym) { display: none; }

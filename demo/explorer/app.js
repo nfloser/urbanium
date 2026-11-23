@@ -31,11 +31,13 @@ const AVAILABILITY = { available: "liefert Daten", degraded: "liefert teilweise"
 const FRESHNESS = { fresh: "aktuell", stale: "veraltet", no_data: "keine Daten", last_known: "zuletzt bekannt" };
 const PREDICATE = {
   located_in: "liegt im Suchgebiet",
+  located_near: "liegt im Umland von",
   on_water_body: "misst am Gewässer",
   nearest_weather_station: "nächste Wetterstation",
 };
 const INVERSE = {
   located_in: "enthält",
+  located_near: "hat im Umland",
   on_water_body: "gemessen von Pegel",
   nearest_weather_station: "nächster Pegel dazu",
 };
@@ -293,6 +295,8 @@ function renderLayers() {
       : layer.entity_count === 0
         ? "Keine Messstellen im Suchgebiet gefunden"
         : `${layer.entity_count} Messstellen gefunden, ${withData} mit Werten`;
+    const ring = state.twin.entities.filter((e) => e.capability_id === layer.capability_id && e.in_surroundings).length;
+    if (ring) meta += `, davon ${ring} im Umland`;
     if (layer.carried_over) {
       meta += `. ${layer.carried_over} Werte stammen vom Stand ${dateTime(layer.carried_over_from)}, weil die Quelle diesmal nichts geliefert hat`;
     }
@@ -378,11 +382,11 @@ function renderInsights() {
         h(
           "article",
           { class: "insight" },
-          h("h3", {}, "Temperaturunterschied in der Stadt"),
+          h("h3", {}, ringCount(out.values.map((v) => v.entity)) ? "Temperaturunterschied in Stadt und Umland" : "Temperaturunterschied in der Stadt"),
           h(
             "p",
             {},
-            `Um ${clock(out.observed_at)} Uhr liegen zwischen ${out.station_count} Stationen ${num(out.spread, 1)} Grad. Am kühlsten ist es an `,
+            `Um ${clock(out.observed_at)} Uhr liegen zwischen ${out.station_count} Stationen${ringCount(out.values.map((v) => v.entity)) ? ` (davon ${ringCount(out.values.map((v) => v.entity))} im Umland)` : ""} ${num(out.spread, 1)} Grad. Am kühlsten ist es an `,
             entityButton(out.min.entity),
             ` (${num(out.min.value, 1)} °C), am wärmsten an `,
             entityButton(out.max.entity),
@@ -499,6 +503,10 @@ function renderMap() {
   const area = twin.city.area;
   if (area) {
     L.rectangle([[area.south, area.west], [area.north, area.east]], { color: "#15263a", weight: 1, dashArray: "2 6", fill: false, interactive: false }).addTo(state.overlays);
+    if (area.surroundings_km > 0) {
+      const ring = envelope(area);
+      L.rectangle([[ring.south, ring.west], [ring.north, ring.east]], { color: "#5e6b78", weight: 1, dashArray: "1 7", fill: false, interactive: false }).addTo(state.overlays);
+    }
   }
 
   if (!state.hidden.has("relations")) {
@@ -608,6 +616,18 @@ function declutter() {
   }
 }
 
+/* Same envelope as CityArea.search_envelope in Python. */
+function envelope(area) {
+  const dlat = area.surroundings_km / 111.32;
+  const lat = (area.south + area.north) / 2;
+  const dlon = area.surroundings_km / (111.32 * Math.max(Math.cos((lat * Math.PI) / 180), 0.01));
+  return { south: area.south - dlat, west: area.west - dlon, north: area.north + dlat, east: area.east + dlon };
+}
+
+function ringCount(ids) {
+  return ids.map(entityById).filter((e) => e && e.in_surroundings).length;
+}
+
 function canonical(ref) {
   return `${ref.city_id}:${ref.entity_type}:${ref.entity_id}`;
 }
@@ -617,6 +637,7 @@ function markerIcon(group) {
   const classes = ["mk", entity.entity_type === "river_gauge" ? "mk-gauge" : "mk-temp"];
   if (group.every((e) => e.freshness === "stale")) classes.push("stale");
   if (group.every((e) => e.freshness === "last_known")) classes.push("lastknown");
+  if (group.every((e) => e.in_surroundings)) classes.push("ring");
   if (group.every((e) => e.freshness === "no_data")) classes.push("nodata");
   if (group.some((e) => e.id === state.selected)) classes.push("selected");
   let style = "";
@@ -648,6 +669,7 @@ function tooltip(entity) {
     h("span", { class: "v" }, entity.latest ? `${valueText(entity, false)} ${q ? q.unit : entity.latest.unit}` : "Keine Werte"),
     entity.latest ? h("div", { class: "t" }, `${q ? q.label : ""}, gemessen ${dateTime(entity.latest.observed_at)}, ${FRESHNESS[entity.freshness]}`) : h("div", { class: "t" }, "Im Inventar gelistet, aber ohne aktuelle Messung"),
     entity.carried_over_from ? h("div", { class: "t" }, `Vom Stand ${dateTime(entity.carried_over_from)} übernommen; die Quelle hat diesmal nichts geliefert`) : null,
+    entity.in_surroundings ? h("div", { class: "t" }, `Im Umland, außerhalb des Stadtgebiets`) : null,
     h("div", { class: "t" }, (sourceOf(entity.source_id) || {}).provider || entity.source_id),
   );
 }
@@ -692,7 +714,7 @@ function renderDetail() {
     h(
       "div",
       { class: "detail-head" },
-      h("div", {}, h("p", { class: "kind" }, ENTITY_KIND[entity.entity_type] || entity.entity_type), h("h2", {}, entity.label)),
+      h("div", {}, h("p", { class: "kind" }, (ENTITY_KIND[entity.entity_type] || entity.entity_type) + (entity.in_surroundings ? " im Umland" : "")), h("h2", {}, entity.label)),
       h("button", { type: "button", class: "close", onclick: () => select(entity.id), "aria-label": "Auswahl aufheben" }, "Schließen"),
     ),
     entity.latest
@@ -909,7 +931,7 @@ function renderGraph() {
     a: canonical(rel.assertion.subject),
     b: canonical(rel.assertion.object),
     predicate: rel.assertion.predicate,
-    kind: rel.assertion.predicate === "located_in" ? "faint" : rel.assertion.state_category === "derived" ? "derived" : "reference",
+    kind: rel.assertion.predicate === "located_in" || rel.assertion.predicate === "located_near" ? "faint" : rel.assertion.state_category === "derived" ? "derived" : "reference",
   }));
   const sel = state.selected;
   const edgeEls = edges
@@ -1076,6 +1098,7 @@ function yamlExample(twin) {
     `  west: ${c.area.west}`,
     `  north: ${c.area.north}`,
     `  east: ${c.area.east}`,
+    ...(c.area.surroundings_km ? [`  surroundings_km: ${c.area.surroundings_km}`] : []),
     "capabilities:",
     ...c.capabilities.map((x) => `  - id: ${x.id}\n    support: ${x.support}`),
     "sources:",

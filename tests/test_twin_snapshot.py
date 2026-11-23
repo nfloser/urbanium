@@ -282,3 +282,9 @@ def test_cli_reads_previous_snapshots(tmp_path: Path) -> None:
     assert loaded is not None and loaded.city.id == "berlin"
     assert load_previous(previous, "mainz") is None
     assert load_previous(previous, "koeln") is None
+
+
+def test_entities_in_the_surroundings_are_flagged() -> None:
+    twin = snapshot("berlin")
+
+    assert all(entity.in_surroundings is False for entity in twin.entities)

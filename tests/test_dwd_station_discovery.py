@@ -172,3 +172,23 @@ def test_station_whose_inventory_ended_more_than_a_week_ago_counts_as_closed() -
     result = discovery(payload).discover(BERLIN)
 
     assert [item.location.entity.entity_id for item in result.entities] == ["dwd_station_00433"]
+
+
+def test_surroundings_bring_in_stations_just_outside_the_area() -> None:
+    raw = BERLIN.model_dump(mode="json")
+    raw["area"]["surroundings_km"] = 15
+    with_ring = BERLIN.model_validate(raw)
+    payload = (
+        HEADER
+        + row("00433", 52.4675, 13.4021)
+        + row("00427", 52.3807, 13.5306)
+        # ~10 km south of the area
+        + row("05825", 52.25, 13.40, name="Umlandstation")
+    ).encode("latin-1")
+
+    without = discovery(payload).discover(BERLIN)
+    with_surroundings = discovery(payload).discover(with_ring)
+
+    assert "dwd_station_05825" not in [e.location.entity.entity_id for e in without.entities]
+    assert "dwd_station_05825" in [e.location.entity.entity_id for e in with_surroundings.entities]
+    validate_discovery_result(with_ring, with_surroundings)
