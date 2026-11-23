@@ -1,0 +1,6 @@
+schema_version: "1"
+city_id: hamburg
+source_id: dwd_open_data
+freshness_minutes: 90
+active_within_days: 550
+max_stations: 30
