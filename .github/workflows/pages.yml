@@ -72,6 +72,27 @@ jobs:
           retention-days: 2
       - name: Add the Twin Explorer
         run: cp -r demo/explorer/. _site/
+      - name: Pick this month's basemap cache key
+        id: month
+        run: echo "key=basemap-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Reuse this month's basemap extracts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: basemap
+          key: ${{ steps.month.outputs.key }}-${{ hashFiles('cities/*/city.yaml') }}
+      - name: Extract self-hosted basemaps
+        # Optional: without extracts the explorer falls back to CARTO raster tiles.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.31.2 --repo protomaps/go-pmtiles --pattern '*Linux_x86_64.tar.gz' --dir "$RUNNER_TEMP"
+          tar -xzf "$RUNNER_TEMP"/*Linux_x86_64.tar.gz -C "$RUNNER_TEMP" pmtiles
+          PATH="$RUNNER_TEMP:$PATH" python demo/basemaps.py basemap
+      - name: Publish the basemaps next to the explorer
+        run: |
+          mkdir -p _site/basemap
+          cp basemap/*.pmtiles _site/basemap/ 2>/dev/null || echo "no basemap extracts; CARTO fallback"
       - name: Keep the built site for pull request review
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

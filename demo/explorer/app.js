@@ -96,6 +96,7 @@ const state = {
   chartRange: "day",
   hidden: new Set(),
   map: null,
+  basemap: null,
   markers: new Map(),
   overlays: null,
 };
@@ -562,7 +563,7 @@ function renderCredits() {
     ...sources.map((s) =>
       h("p", {}, `${s.provider}`, s.license.identifier ? `, Lizenz ${s.license.identifier}` : "", s.license.terms_url ? [" (", h("a", { href: s.license.terms_url, rel: "noopener" }, "Bedingungen"), ")"] : ""),
     ),
-    h("p", {}, "Kartengrundlage © OpenStreetMap-Mitwirkende, © CARTO."),
+    h("p", { id: "map-credit" }, "Kartengrundlage © OpenStreetMap-Mitwirkende."),
     h("p", {}, h("a", { href: "https://github.com/nfloser/urbanium" }, "Quellcode auf GitHub"), ", ", h("a", { href: "catalog/" }, "Quellenkatalog")),
   );
 }
@@ -572,11 +573,6 @@ function renderCredits() {
 function ensureMap() {
   if (state.map) return state.map;
   state.map = L.map("map", { zoomControl: true, attributionControl: true, zoomSnap: 0.25 });
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-    subdomains: "abcd",
-    maxZoom: 18,
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende, © <a href="https://carto.com/attributions">CARTO</a>',
-  }).addTo(state.map);
   state.map.attributionControl.setPrefix(false);
   state.overlays = L.layerGroup().addTo(state.map);
   state.map.on("zoomend", () => setTimeout(declutter, 0));
@@ -598,11 +594,41 @@ function ensureMap() {
   return state.map;
 }
 
+const OSM = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
+
+/* Self-hosted vector basemap (basemap/<city>.pmtiles) when the server can serve
+   byte ranges; otherwise CARTO raster tiles as before. */
+async function setBasemap(map, cityId) {
+  const url = `basemap/${encodeURIComponent(cityId)}.pmtiles`;
+  let vector = false;
+  if (window.protomapsL) {
+    try {
+      const head = await fetch(url, { method: "HEAD", cache: "no-cache" });
+      vector = head.ok && (head.headers.get("accept-ranges") || "").includes("bytes");
+    } catch {
+      vector = false;
+    }
+  }
+  if (state.basemap) map.removeLayer(state.basemap);
+  state.basemap = vector
+    ? protomapsL.leafletLayer({ url, flavor: "light", lang: "de", attribution: `${OSM}, <a href="https://protomaps.com">Protomaps</a>` })
+    : L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        subdomains: "abcd",
+        maxZoom: 18,
+        attribution: `${OSM}, © <a href="https://carto.com/attributions">CARTO</a>`,
+      });
+  state.basemap.addTo(map);
+  state.basemap.bringToBack && state.basemap.bringToBack();
+  map.getContainer().dataset.basemap = vector ? "pmtiles" : "carto";
+  document.getElementById("map-credit").textContent = vector ? "Kartengrundlage © OpenStreetMap-Mitwirkende, Protomaps, selbst gehostet." : "Kartengrundlage © OpenStreetMap-Mitwirkende, © CARTO.";
+}
+
 function renderMap() {
   const map = ensureMap();
   const twin = state.twin;
   const cityChanged = map._urbaniumCity !== twin.city.id;
   map._urbaniumCity = twin.city.id;
+  if (cityChanged) setBasemap(map, twin.city.id);
   state.overlays.clearLayers();
   state.markers.clear();
 
