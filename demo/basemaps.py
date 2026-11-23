@@ -11,10 +11,14 @@ so a cached directory is only filled up. Data © OpenStreetMap contributors
 
 import argparse
 import json
+import re
 import subprocess
 import sys
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 from urbanium.core.city import CityDefinition
 from urbanium.registry import CityRegistry
@@ -22,6 +26,8 @@ from urbanium.registry import CityRegistry
 BUILDS = "https://build-metadata.protomaps.dev/builds.json"
 PLANET = "https://build.protomaps.com/{key}"
 MARGIN_DEG = 0.03
+# Some hosts reject urllib's default user agent (the first CI run got HTTP 403).
+HEADERS = {"User-Agent": "Urbanium basemap extract (https://github.com/nfloser/urbanium)"}
 
 
 def bbox(city: CityDefinition) -> tuple[float, float, float, float] | None:
@@ -38,13 +44,38 @@ def bbox(city: CityDefinition) -> tuple[float, float, float, float] | None:
     )
 
 
+def newest_key(keys: Iterable[str]) -> str | None:
+    """Newest daily build key, accepting '20261120' and '20261120.pmtiles'."""
+
+    dated = sorted(
+        match.group(1)
+        for key in keys
+        if (match := re.fullmatch(r"(\d{8})(?:\.pmtiles)?", str(key).strip()))
+    )
+    return f"{dated[-1]}.pmtiles" if dated else None
+
+
 def latest_build() -> str:
-    with urlopen(BUILDS, timeout=30) as response:  # noqa: S310 - fixed metadata URL
-        builds = json.load(response)
-    keys = sorted(item["key"] for item in builds if str(item.get("key", "")).endswith(".pmtiles"))
-    if not keys:
-        raise RuntimeError("no Protomaps build listed")
-    return keys[-1]
+    """Newest build from the metadata list, else by probing the last ten days."""
+
+    try:
+        with urlopen(Request(BUILDS, headers=HEADERS), timeout=30) as response:  # noqa: S310
+            listed = json.load(response)
+        key = newest_key(item.get("key", "") for item in listed if isinstance(item, dict))
+        if key:
+            return key
+    except (URLError, OSError, ValueError) as exc:
+        print(f"build list unavailable ({exc}); probing recent builds", file=sys.stderr)
+    today = datetime.now(UTC).date()
+    for days in range(10):
+        key = f"{today - timedelta(days=days):%Y%m%d}.pmtiles"
+        try:
+            request = Request(PLANET.format(key=key), headers=HEADERS, method="HEAD")
+            with urlopen(request, timeout=30):  # noqa: S310 - fixed host
+                return key
+        except (URLError, OSError):
+            continue
+    raise RuntimeError("no Protomaps build found in the last ten days")
 
 
 def main() -> int:

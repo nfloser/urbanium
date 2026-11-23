@@ -25,3 +25,10 @@ def test_bbox_covers_the_search_envelope_including_surroundings() -> None:
 def test_city_without_area_gets_no_extract() -> None:
     city = CityRegistry.from_directory(ROOT / "cities").city("berlin")
     assert basemaps.bbox(city.model_copy(update={"area": None})) is None
+
+
+def test_newest_build_key_accepts_both_spellings_and_ignores_others() -> None:
+    keys = ["20261119.pmtiles", "20261121", "latest", "20261120.pmtiles", "2026112.pmtiles"]
+
+    assert basemaps.newest_key(keys) == "20261121.pmtiles"
+    assert basemaps.newest_key(["nothing"]) is None
