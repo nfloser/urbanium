@@ -11,7 +11,7 @@ schema_version: "1"
 city_id: berlin
 source_id: dwd_open_data
 freshness_minutes: 90
-active_within_days: 550
+active_within_days: 7
 max_stations: 30
 ~~~
 
@@ -19,13 +19,13 @@ The existing single-station binding (`dwd_air_temperature.yaml`) is unchanged an
 
 ## Behaviour
 
-1. Read the published inventory `zehn_min_tu_Beschreibung_Stationen.txt` (size-limited, same reader as [station locations](dwd-station-locations.md)).
+1. Read the inventory of the `now` archives, `10_minutes/air_temperature/now/zehn_now_tu_Beschreibung_Stationen.txt` (size-limited, same parser as [station locations](dwd-station-locations.md)). Unlike the historical inventory, its end dates are current, so closed stations drop out within days.
 2. Parse each row. Malformed rows are skipped; they never produce a location.
-3. Keep stations whose inventory end date lies within `active_within_days` and whose coordinates are inside the area. The historical inventory is refreshed rarely, so its end date lags behind reality; the window is deliberately generous and the measurement read decides whether a station actually delivers data.
+3. Keep stations whose inventory end date lies within `active_within_days` (default 7) and whose coordinates are inside the area. The measurement read still decides whether a station delivers data in a given run.
 4. Drop station ids that appear in more than one qualifying row, because the location would be ambiguous.
 5. Order by distance to the area centre, then by id, and keep at most `max_stations`.
 
-Every entity is `weather_station:dwd_station_<id>` with a `reference` location and evidence `zehn_min_tu_Beschreibung_Stationen.txt:<id>:<sha256 of inventory>`. Attributes carry the station id, elevation in metres, federal state where recognisable and the inventory end date.
+Every entity is `weather_station:dwd_station_<id>` with a `reference` location and evidence `zehn_now_tu_Beschreibung_Stationen.txt:<id>:<sha256 of inventory>`. Attributes carry the station id, elevation in metres, federal state where recognisable and the inventory end date.
 
 Transport failures, oversize or unreadable inventories make the discovery `unavailable` with `timeout`, `upstream` or `invalid_response`.
 

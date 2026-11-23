@@ -2,5 +2,5 @@ schema_version: "1"
 city_id: koeln
 source_id: dwd_open_data
 freshness_minutes: 90
-active_within_days: 550
+active_within_days: 7
 max_stations: 30

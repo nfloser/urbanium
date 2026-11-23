@@ -17,7 +17,7 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from urbanium.providers.dwd.air_temperature import DWD_NOW_BASE_URL
-from urbanium.providers.dwd.station_location import DWD_STATION_LIST_URL
+from urbanium.providers.dwd.discovery import DWD_NOW_STATION_LIST_URL
 from urbanium.providers.pegelonline.water_level import PEGELONLINE_BASE_URL
 from urbanium.registry import CityRegistry
 from urbanium.twin.bindings import area_bindings
@@ -128,7 +128,7 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
     inventory_bytes = ("\n".join(inventory) + "\n").encode("latin-1")
 
     def fetch(url: str, timeout: float) -> bytes:
-        if url == DWD_STATION_LIST_URL:
+        if url == DWD_NOW_STATION_LIST_URL:
             return inventory_bytes
         if url.startswith(DWD_NOW_BASE_URL):
             return archives[url.rsplit("_TU_", 1)[1][:5]]
