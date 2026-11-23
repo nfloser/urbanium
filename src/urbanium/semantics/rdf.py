@@ -15,7 +15,10 @@ SOSA = Namespace("http://www.w3.org/ns/sosa/")
 GEO = Namespace("http://www.opengis.net/ont/geosparql#")
 
 ENTITY_CLASS_MAPPINGS: dict[str, URIRef] = {
+    "discovery_area": GEO.Feature,
     "district": GEO.Feature,
+    "river_gauge": SOSA.Platform,
+    "water_body": GEO.Feature,
     "weather_station": SOSA.Platform,
 }
 PREDICATE_MAPPINGS: dict[str, URIRef] = {
