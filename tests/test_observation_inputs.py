@@ -279,3 +279,50 @@ def test_same_handoff_accepts_transport_evidence_without_weather_assumptions() -
     assert prepared.capability_id == "realtime_transport"
     assert prepared.version == "1"
     assert prepared.payload["read"]["observations"][0]["value"] == "0"
+
+
+def test_reference_context_is_carried_with_its_evidence() -> None:
+    from tests.agents.helpers import BERLIN, NOW, RIVER, observation, read
+    from tests.agents.test_water_level_class import gauge
+
+    item = observation_input(
+        BERLIN,
+        RIVER,
+        read(observation(RIVER, "g1", "1", 0)),
+        prepared_at=NOW,
+        reference=(gauge("g1", mw_cm=1.0),),
+    )
+
+    assert isinstance(item.payload, dict)
+    reference = item.payload["reference_entities"]
+    assert isinstance(reference, list) and reference[0]["entity"] == "berlin:river_gauge:g1"  # type: ignore[index]
+    assert reference[0]["attributes"]["mw_cm"] == 1.0  # type: ignore[index]
+    assert reference[0]["evidence"][0]["source_id"] == "pegelonline"  # type: ignore[index]
+
+
+def test_reference_entities_must_belong_to_the_city() -> None:
+    import pytest
+
+    from tests.agents.helpers import BERLIN, NOW, RIVER, observation, read
+    from tests.agents.test_water_level_class import gauge
+
+    foreign = gauge("g1").model_copy(
+        update={
+            "location": gauge("g1").location.model_copy(
+                update={
+                    "entity": gauge("g1").location.entity.model_copy(update={"city_id": "mainz"}),
+                    "evidence": (
+                        gauge("g1").location.evidence[0].model_copy(update={"city_id": "mainz"}),
+                    ),
+                }
+            )
+        }
+    )
+    with pytest.raises(ValueError, match="reference"):
+        observation_input(
+            BERLIN,
+            RIVER,
+            read(observation(RIVER, "g1", "1", 0)),
+            prepared_at=NOW,
+            reference=(foreign,),
+        )

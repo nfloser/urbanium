@@ -108,6 +108,7 @@ class PegelonlineGaugeDiscovery:
                 "radius": str(ceil(envelope.covering_radius_km) + 1),
                 "includeTimeseries": "true",
                 "includeCurrentMeasurement": "true",
+                "includeCharacteristicValues": "true",
             }
         )
         return f"{PEGELONLINE_BASE_URL}/stations.json?{query}"
@@ -195,6 +196,7 @@ class PegelonlineGaugeDiscovery:
             attributes["agency"] = raw["agency"]
         if isinstance(raw.get("km"), int | float) and not isinstance(raw.get("km"), bool):
             attributes["river_km"] = float(raw["km"])
+        attributes.update(_characteristic_values(water_level.get("characteristicValues")))
         zero = water_level.get("gaugeZero")
         if isinstance(zero, dict) and isinstance(zero.get("value"), int | float):
             attributes["gauge_zero_m"] = float(zero["value"])
@@ -383,6 +385,32 @@ class PegelonlineWaterLevelProvider:
                 invalid += 1
         result.sort(key=lambda observation: observation.observed_at)
         return result, invalid
+
+
+CHARACTERISTIC = {"MNW": "mnw_cm", "MW": "mw_cm", "MHW": "mhw_cm"}
+
+
+def _characteristic_values(raw: object) -> dict[str, str | int | float | bool]:
+    """MNW, MW and MHW in cm, taken only when all three are present and numeric."""
+
+    if not isinstance(raw, list):
+        return {}
+    found: dict[str, str | int | float | bool] = {}
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        key = CHARACTERISTIC.get(str(item.get("shortname", "")))
+        value = item.get("value")
+        if (
+            key is None
+            or key in found
+            or item.get("unit") != "cm"
+            or isinstance(value, bool)
+            or not isinstance(value, int | float)
+        ):
+            continue
+        found[key] = float(value)
+    return found if len(found) == len(CHARACTERISTIC) else {}
 
 
 def _number(value: object) -> float:

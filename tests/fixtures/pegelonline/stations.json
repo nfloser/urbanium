@@ -8,7 +8,10 @@
     "agency": "SPREE-HAVEL",
     "longitude": 13.4085,
     "latitude": 52.5133,
-    "water": {"shortname": "SPREE-ODER-WASSERSTRASSE", "longname": "SPREE-ODER-WASSERSTRASSE"},
+    "water": {
+      "shortname": "SPREE-ODER-WASSERSTRASSE",
+      "longname": "SPREE-ODER-WASSERSTRASSE"
+    },
     "timeseries": [
       {
         "shortname": "W",
@@ -21,7 +24,51 @@
           "stateMnwMhw": "normal",
           "stateNswHsw": "normal"
         },
-        "gaugeZero": {"unit": "m. ü. NHN", "value": 30.0, "validFrom": "2019-11-01"}
+        "gaugeZero": {
+          "unit": "m. ü. NHN",
+          "value": 30.0,
+          "validFrom": "2019-11-01"
+        },
+        "characteristicValues": [
+          {
+            "shortname": "MNW",
+            "longname": "MITTLERES NIEDRIGWASSER",
+            "unit": "cm",
+            "value": 310,
+            "validFrom": "2019-11-01",
+            "timespanStart": "2008-11-01",
+            "timespanEnd": "2018-10-31"
+          },
+          {
+            "shortname": "MW",
+            "longname": "MITTELWASSER",
+            "unit": "cm",
+            "value": 325,
+            "validFrom": "2019-11-01",
+            "timespanStart": "2008-11-01",
+            "timespanEnd": "2018-10-31"
+          },
+          {
+            "shortname": "MHW",
+            "longname": "MITTLERES HOCHWASSER",
+            "unit": "cm",
+            "value": 345,
+            "validFrom": "2019-11-01",
+            "timespanStart": "2008-11-01",
+            "timespanEnd": "2018-10-31"
+          },
+          {
+            "shortname": "HSW",
+            "longname": "HÖCHSTER SCHIFFBARER WASSERSTAND",
+            "unit": "cm",
+            "value": 380
+          },
+          {
+            "shortname": "MW",
+            "longname": "broken duplicate without value",
+            "unit": "cm"
+          }
+        ]
       }
     ]
   },
@@ -32,18 +79,31 @@
     "longname": "SPANDAU UP",
     "km": 0.6,
     "agency": "SPREE-HAVEL",
-    "longitude": 13.2120,
+    "longitude": 13.212,
     "latitude": 52.5386,
-    "water": {"shortname": "HAVEL", "longname": "UNTERE HAVEL-WASSERSTRASSE"},
+    "water": {
+      "shortname": "HAVEL",
+      "longname": "UNTERE HAVEL-WASSERSTRASSE"
+    },
     "timeseries": [
       {
         "shortname": "W",
         "longname": "WASSERSTAND ROHDATEN",
         "unit": "cm",
         "equidistance": 15,
-        "currentMeasurement": {"timestamp": "2026-11-23T09:45:00+01:00", "value": 224.0, "stateMnwMhw": "low", "stateNswHsw": "normal"}
+        "currentMeasurement": {
+          "timestamp": "2026-11-23T09:45:00+01:00",
+          "value": 224.0,
+          "stateMnwMhw": "low",
+          "stateNswHsw": "normal"
+        }
       },
-      {"shortname": "Q", "longname": "ABFLUSS", "unit": "m3/s", "equidistance": 15}
+      {
+        "shortname": "Q",
+        "longname": "ABFLUSS",
+        "unit": "m3/s",
+        "equidistance": 15
+      }
     ]
   },
   {
@@ -52,10 +112,20 @@
     "shortname": "DISCHARGE ONLY",
     "longname": "DISCHARGE ONLY",
     "agency": "SPREE-HAVEL",
-    "longitude": 13.30,
+    "longitude": 13.3,
     "latitude": 52.45,
-    "water": {"shortname": "TELTOWKANAL", "longname": "TELTOWKANAL"},
-    "timeseries": [{"shortname": "Q", "longname": "ABFLUSS", "unit": "m3/s", "equidistance": 15}]
+    "water": {
+      "shortname": "TELTOWKANAL",
+      "longname": "TELTOWKANAL"
+    },
+    "timeseries": [
+      {
+        "shortname": "Q",
+        "longname": "ABFLUSS",
+        "unit": "m3/s",
+        "equidistance": 15
+      }
+    ]
   },
   {
     "uuid": "aa2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b",
@@ -64,9 +134,19 @@
     "longname": "OUTSIDE THE AREA",
     "agency": "SPREE-HAVEL",
     "longitude": 12.95,
-    "latitude": 52.40,
-    "water": {"shortname": "HAVEL", "longname": "HAVEL"},
-    "timeseries": [{"shortname": "W", "longname": "WASSERSTAND ROHDATEN", "unit": "cm", "equidistance": 15}]
+    "latitude": 52.4,
+    "water": {
+      "shortname": "HAVEL",
+      "longname": "HAVEL"
+    },
+    "timeseries": [
+      {
+        "shortname": "W",
+        "longname": "WASSERSTAND ROHDATEN",
+        "unit": "cm",
+        "equidistance": 15
+      }
+    ]
   },
   {
     "uuid": "not-a-uuid",
@@ -75,7 +155,15 @@
     "longname": "BROKEN",
     "longitude": 13.4,
     "latitude": 52.5,
-    "water": {"shortname": "SPREE", "longname": "SPREE"},
-    "timeseries": [{"shortname": "W", "unit": "cm"}]
+    "water": {
+      "shortname": "SPREE",
+      "longname": "SPREE"
+    },
+    "timeseries": [
+      {
+        "shortname": "W",
+        "unit": "cm"
+      }
+    ]
   }
 ]

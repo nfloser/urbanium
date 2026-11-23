@@ -156,6 +156,7 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
                             "longname": "WASSERSTAND ROHDATEN",
                             "unit": "cm",
                             "gaugeZero": {"unit": "m. ü. NHN", "value": 30.0 + gauge_index},
+                            "characteristicValues": _characteristic(city.id, level, gauge_index),
                         }
                     ],
                 }
@@ -180,6 +181,20 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
         return series[uuid]
 
     return fetch
+
+
+def _characteristic(city_id: str, level: int, index: int) -> list[dict[str, object]]:
+    """Invented long-term values; Hamburg's tidal gauges publish none here."""
+
+    if city_id == "hamburg" or index % 4 == 3:
+        return []
+    # Mainz' Rhine gauge sits above its mean high water to show that case.
+    shift = 40 if city_id == "mainz" else 0
+    return [
+        {"shortname": "MNW", "unit": "cm", "value": level - 45 - shift},
+        {"shortname": "MW", "unit": "cm", "value": level - 10 - shift},
+        {"shortname": "MHW", "unit": "cm", "value": level + 30 - shift * 2},
+    ]
 
 
 def _archive(sid: str, base: float, *, phase: float) -> bytes:
