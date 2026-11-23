@@ -325,11 +325,11 @@ function renderLayers() {
     const source = sourceOf(layer.source_id);
     const withData = state.twin.entities.filter((e) => e.capability_id === layer.capability_id && e.latest).length;
     let meta = layer.discovery_status === "unavailable"
-      ? "Suche nach Messstellen fehlgeschlagen"
-      : layer.entity_count === 0
-        ? "Keine Messstellen im Suchgebiet gefunden"
-        : layer.capability_id === "realtime_transport"
-          ? `${layer.entity_count} Haltestellen im Suchgebiet in aktuellen Meldungen genannt`
+      ? "Suche fehlgeschlagen"
+      : layer.capability_id === "realtime_transport"
+        ? transitMeta(layer)
+        : layer.entity_count === 0
+          ? "Keine Messstellen im Suchgebiet gefunden"
           : `${layer.entity_count} Messstellen gefunden, ${withData} mit Werten`;
     const ring = state.twin.entities.filter((e) => e.capability_id === layer.capability_id && e.in_surroundings).length;
     if (ring) meta += `, davon ${ring} im Umland`;
@@ -364,6 +364,16 @@ function renderLayers() {
     ),
   );
   list.replaceChildren(...items);
+}
+
+function transitMeta(layer) {
+  const alerts = layer.summary ? layer.summary.active_service_alerts : undefined;
+  if (layer.entity_count === 0) {
+    return alerts !== undefined
+      ? `Der Feed enthält gerade ${alerts} Meldungen; keine nennt eine Haltestelle im Suchgebiet (sie beziehen sich etwa auf Linien oder Fahrten)`
+      : "Keine Haltestelle im Suchgebiet wird gerade in einer Meldung genannt";
+  }
+  return `${layer.entity_count} Haltestellen im Suchgebiet in aktuellen Meldungen genannt${alerts !== undefined ? ` (${alerts} Meldungen im Feed)` : ""}`;
 }
 
 /* Known provider diagnostics in plain German; anything else is shown as sent. */

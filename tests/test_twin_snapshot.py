@@ -288,3 +288,13 @@ def test_entities_in_the_surroundings_are_flagged() -> None:
     twin = snapshot("berlin")
 
     assert all(entity.in_surroundings is False for entity in twin.entities)
+
+
+def test_layers_keep_network_level_figures_as_a_summary() -> None:
+    twin = snapshot("berlin")
+
+    transit = next(layer for layer in twin.layers if layer.capability_id == "realtime_transport")
+    assert transit.summary["active_service_alerts"] == "2"
+    assert transit.summary["named_stops_in_area"] == "2"
+    weather = next(layer for layer in twin.layers if layer.capability_id == "weather")
+    assert weather.summary == {}

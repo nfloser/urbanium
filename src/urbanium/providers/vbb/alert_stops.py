@@ -304,6 +304,8 @@ class VbbAlertStopProvider:
                 received_at=feed.received_at,
             )
         ]
+        # Feed-wide counts (alerts, trip updates, vehicle positions) as read.
+        observations.extend(snapshot.result.observations)
         observations.extend(
             Observation(
                 city_id=config.city_id,

@@ -16,7 +16,7 @@ Each city with an `area` gets `<id>.json` and `<id>.ttl`; `index.json` summarise
 
 1. For every area binding (`dwd_air_temperature_area.yaml`, `pegelonline.yaml`): discover entities, validate them against the city, read measurements through the provider, validate the read.
 2. Sample the completion time once, after all upstream responses.
-3. Build layers (discovery and read outcome per binding) and entities (sourced location, attributes, evidence, latest value, recent series, per-entity freshness).
+3. Build layers (discovery and read outcome per binding, plus a `summary` of observations about the source as a whole, such as how many alerts the VBB feed carries) and entities (sourced location, attributes, evidence, latest value, recent series, per-entity freshness).
 4. Derive [relations](agents.md#relationships) and run every [agent](agents.md). Agents that do not resolve for the city keep their resolution reasons; agents whose capability had no read are marked as skipped with a reason.
 
 Nothing is filled in: an unavailable discovery yields no entities, a station without values stays in the snapshot with `freshness: no_data`, and an agent without the evidence it needs reports why.

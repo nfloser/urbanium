@@ -69,9 +69,13 @@ def test_unresolved_ids_degrade_the_read_and_counts_are_observations() -> None:
 
     assert result.availability is Availability.DEGRADED
     assert result.error is not None and "1 of 3 alert stop ids" in result.error.message
-    counts = {o.entity.entity_type: o for o in result.observations}
-    assert counts["transport_network"].quantity_id == "named_stops_in_area"
-    assert counts["transport_network"].value == 2
+    network = {
+        o.quantity_id: o.value
+        for o in result.observations
+        if o.entity.entity_type == "transport_network"
+    }
+    assert network["named_stops_in_area"] == 2
+    assert network["active_service_alerts"] == 2  # feed-wide counts are kept as read
 
 
 def test_feed_or_static_outage_makes_discovery_unavailable() -> None:

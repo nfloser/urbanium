@@ -111,6 +111,7 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
         assert page.locator(".mk-gauge [data-entity]").count() == 19
         assert page.locator(".mk-gauge").count() < 19  # lock pairs are grouped
         assert page.locator(".mk-transit [data-entity]").count() == 3
+        assert "(3 Meldungen im Feed)" in page.inner_text("#layers")
         insights = page.inner_text("#insights")
         assert "Hochwasser und Störungsmeldungen" in insights
         assert "Beispielhaltestelle Mühlendamm" in insights
