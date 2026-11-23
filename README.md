@@ -1,33 +1,42 @@
 # Urbanium
 
-Urbanium provides shared infrastructure for federated urban digital twins across different cities. City adapters and agents connect data sources without tying the platform core to any one deployment.
+[![CI](https://github.com/nfloser/urbanium/actions/workflows/ci.yml/badge.svg)](https://github.com/nfloser/urbanium/actions/workflows/ci.yml)
+[![Browser demo](https://github.com/nfloser/urbanium/actions/workflows/pages.yml/badge.svg)](https://nfloser.github.io/urbanium/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](#license)
 
-Urbanium is designed as platform infrastructure, not as a dashboard application. Dashboards, command-line tools, research notebooks and municipal integrations are clients of its stable contracts; the core runs independently of them.
+**Live city data from official sources in one API – with the source of every value attached.**
 
-Berlin and Mainz are the first reference deployments used to prove portability. Neither city is allowed to define the platform core. Hamburg and Köln were added through configuration only, using area-based discovery of nationwide sources.
+Urbanium reads live data such as air temperatures from the German Weather Service (DWD), water levels from PEGELONLINE and public-transport alerts from the Berlin-Brandenburg transport association (VBB), translates it into one common format and serves it through a versioned REST API and a map-based explorer. Every value keeps where it came from and when it was read. If a source is down, Urbanium says so instead of filling the gap.
 
-## Goals
+The core knows no city. Berlin and Mainz were the first deployments; Hamburg and Köln were added through configuration alone.
 
-Urbanium connects urban assets, sensors, observations, datasets, models, simulations and agents through versioned interfaces. Data retains its provenance, uncertainty and quality metadata; reference, live, historical, forecast, scenario and simulated states remain distinct.
+*Auf Deutsch:* Urbanium liest Live-Daten wie Lufttemperaturen des Deutschen Wetterdienstes, Pegelstände und Störungsmeldungen des VBB, bringt sie in ein gemeinsames Format und zeigt sie über eine REST-API und eine Karte. Zu jedem Wert bleibt erhalten, woher er stammt und wann er gelesen wurde.
 
-The long-term goal is to connect information across urban domains so relationships between systems can support analysis and decisions.
+**Python 3.12 · FastAPI · Pydantic · RDF/SHACL · GeoSPARQL · Leaflet · REST/OpenAPI**
 
-## Architecture principles
+[Twin Explorer](https://nfloser.github.io/urbanium/) · [Run locally](#run-locally) · [API reference](docs/api/v1.md) · [Documentation](#documentation)
 
-- city-independent core with explicit city adapters;
-- capability-based behavior instead of assumed data parity;
-- provider adapters isolate external schemas;
-- canonical contracts are the runtime interoperability boundary;
-- semantic/knowledge-graph representations are introduced where they add interoperability or reasoning value;
-- provenance and epistemic state are first-class;
-- agents and models declare requirements rather than hard-coding cities;
-- applications consume platform interfaces and do not own core behavior;
-- modular monorepo first, distributed deployment only when evidence justifies it;
-- no fabricated production data or hidden fallback semantics.
+## Twin Explorer
 
-See [documentation](docs/index.md), [architecture](docs/architecture/overview.md), [ADRs](docs/adr/) and the [roadmap](docs/development/roadmap.md).
+[Open the Twin Explorer](https://nfloser.github.io/urbanium/) – a map-first view of Berlin, Hamburg, Köln and Mainz, rebuilt from live sources twice an hour:
+
+- **Map**: every discovered weather station and gauge with its latest value; hover for time, freshness and source
+- **Findings**: agent results in plain language, each with how it was calculated
+- **Knowledge graph**: stations, gauges, water bodies and their relationships, measured and derived kept apart, with a Turtle export
+- **Cities**: capabilities, sources and coverage per city, with a comparison export
+
+The previous catalogue view remains under `/catalog/`. See [demo/README.md](demo/README.md) to run it locally or offline.
 
 ## Current status
+
+- **Sources**: DWD air temperature (10-minute stations), PEGELONLINE water levels, VBB GTFS-Realtime alerts, each behind its own adapter with provenance
+- **Cities**: Berlin, Mainz, Hamburg and Köln; nationwide sources discover their stations and gauges inside each city's search area
+- **Agents**: temperature spread across stations at one shared time, six-hour water-level trends, gauges against their long-term characteristic values, spatial links between entities
+- **Outputs**: REST API (`/api/v1`) with OpenAPI, versioned twin snapshots as JSON and RDF/Turtle, 30-day observation histories
+- **Not yet**: a persistent last-known-good state store, scheduling and orchestration beyond the snapshot workflow
+
+<details>
+<summary>Status in detail</summary>
 
 The architecture/engineering baseline is established. The first executable vertical slice adds a versioned city/capability/source registry in which Berlin and Mainz validate through the same core contracts while retaining different evidence-backed capability sets.
 
@@ -43,40 +52,76 @@ Cities can declare a search area. Nationwide sources then [discover their entiti
 
 A persistent last-known-good state store is not implemented yet. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
 
-## Try the full runtime on Windows
+</details>
 
-With Python 3.12 and the Windows Python Launcher (`py.exe`) installed, paste this
-into PowerShell. It downloads a fresh copy from GitHub and installs Urbanium
-in a virtual environment inside that copy.
+## Run locally
 
-```powershell
-$dir = Join-Path $env:TEMP ([guid]::NewGuid().ToString()); New-Item -ItemType Directory $dir | Out-Null; $zip = Join-Path $dir 'urbanium.zip'; Invoke-WebRequest -UseBasicParsing 'https://github.com/nfloser/urbanium/archive/refs/heads/main.zip' -OutFile $zip; Expand-Archive $zip $dir; powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dir 'urbanium-main/scripts/start-windows.ps1')
+Requires Python 3.12 or newer.
+
+```bash
+git clone https://github.com/nfloser/urbanium.git
+cd urbanium
 ```
 
-Open the [live dashboard](http://127.0.0.1:8000/) after startup to choose a city
-and see live weather and transit alerts where supported.
+On Windows (with the Python Launcher `py.exe`):
 
-Open [the interactive API](http://127.0.0.1:8000/api/v1/docs) after startup.
-Try city discovery, then use the observation route with `mainz`,
-`dwd_open_data` and `weather` to request a real DWD reading.
-For component runs and semantic projections, see the Python examples in
-the [component documentation](docs/concepts/components.md) and
-[semantic projection guide](docs/ontology/rdf-projection.md).
+```powershell
+.\scripts\start-windows.ps1
+```
 
-## Twin Explorer
+If PowerShell blocks local scripts, allow them for the current session first with `Set-ExecutionPolicy -Scope Process RemoteSigned`.
 
-[Open the Twin Explorer](https://nfloser.github.io/urbanium/)
+On Linux or macOS:
 
-A map-first explorer for Berlin, Hamburg, Köln and Mainz: live station and gauge
-values on the map, agent results with their reasoning, a knowledge-graph view
-with provenance and a city comparison. A scheduled workflow rebuilds the
-snapshots from live sources twice an hour. The previous catalogue view remains
-available under `/catalog/`. See [demo/README.md](demo/README.md) to run it
-locally or offline.
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install .
+URBANIUM_CITIES=cities python -m urbanium.api
+```
 
-Maintainers can publish the demo by selecting **GitHub Actions** under
-**Settings → Pages → Source** and running the **Browser demo** workflow on
-`main`. Changes pushed to `main` and the half-hourly schedule rebuild it.
+Then open:
+
+- [the dashboard](http://127.0.0.1:8000/) to choose a city and see live weather and transit alerts where supported
+- [the interactive API](http://127.0.0.1:8000/api/v1/docs) – try city discovery, then the observation route with `mainz`, `dwd_open_data` and `weather` for a real DWD reading
+
+For component runs and semantic projections, see the Python examples in the [component documentation](docs/concepts/components.md) and the [semantic projection guide](docs/ontology/rdf-projection.md).
+
+## How Urbanium works
+
+Urbanium provides shared infrastructure for federated urban digital twins across different cities. City adapters and agents connect data sources without tying the platform core to any one deployment.
+
+Urbanium is designed as platform infrastructure, not as a dashboard application. Dashboards, command-line tools, research notebooks and municipal integrations are clients of its stable contracts; the core runs independently of them.
+
+Berlin and Mainz are the first reference deployments used to prove portability. Neither city is allowed to define the platform core. Hamburg and Köln were added through configuration only, using area-based discovery of nationwide sources.
+
+### Goals
+
+Urbanium connects urban assets, sensors, observations, datasets, models, simulations and agents through versioned interfaces. Data retains its provenance, uncertainty and quality metadata; reference, live, historical, forecast, scenario and simulated states remain distinct.
+
+The long-term goal is to connect information across urban domains so relationships between systems can support analysis and decisions.
+
+### Architecture principles
+
+- city-independent core with explicit city adapters;
+- capability-based behavior instead of assumed data parity;
+- provider adapters isolate external schemas;
+- canonical contracts are the runtime interoperability boundary;
+- semantic/knowledge-graph representations are introduced where they add interoperability or reasoning value;
+- provenance and epistemic state are first-class;
+- agents and models declare requirements rather than hard-coding cities;
+- applications consume platform interfaces and do not own core behavior;
+- modular monorepo first, distributed deployment only when evidence justifies it;
+- no fabricated production data or hidden fallback semantics.
+
+## Documentation
+
+- [Documentation index](docs/index.md)
+- [Architecture overview](docs/architecture/overview.md)
+- [API v1](docs/api/v1.md)
+- [Twin Explorer](demo/README.md)
+- [Architecture decisions (ADRs)](docs/adr/)
+- [Roadmap](docs/development/roadmap.md)
+- [Contributing](CONTRIBUTING.md) and [security policy](SECURITY.md)
 
 ## Development
 
