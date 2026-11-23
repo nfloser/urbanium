@@ -86,6 +86,8 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
         page.keyboard.press("Enter")
         assert page.locator("#detail h2").inner_text()
         assert "Herkunft" in page.inner_text("#detail")
+        assert page.evaluate("document.activeElement.classList.contains('mk-host')")
+        assert page.locator(".mk.selected").count() == 1
 
         page.click("button[data-view=graph]")
         assert page.locator("#graph .node").count() >= 10

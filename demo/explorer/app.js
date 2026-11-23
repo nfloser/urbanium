@@ -460,6 +460,16 @@ function ensureMap() {
   }).addTo(state.map);
   state.map.attributionControl.setPrefix(false);
   state.overlays = L.layerGroup().addTo(state.map);
+  // Keyboard selection is handled here rather than relying on Leaflet's
+  // keypress-to-click translation, which does not fire for these markers.
+  document.getElementById("map").addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const host = event.target.closest && event.target.closest(".mk-host");
+    const label = host && host.querySelector("[data-entity]");
+    if (!label) return;
+    event.preventDefault();
+    select(label.dataset.entity, { toggle: false });
+  });
   const legend = document.getElementById("legend");
   legend.replaceChildren(
     h("div", { class: "scale" }, "−10°", h("span", { class: "ramp", style: `background: linear-gradient(90deg, ${[-10, 0, 10, 20, 30].map(tempColor).join(",")})` }), "30°"),
@@ -501,10 +511,7 @@ function renderMap() {
       riseOnHover: true,
     });
     marker.bindTooltip(() => tooltip(entity), { className: "tip", direction: "top", offset: [6, -10], opacity: 1 });
-    marker.on("click", () => select(entity.id));
-    marker.on("keypress", (event) => {
-      if (event.originalEvent.key === "Enter") select(entity.id);
-    });
+    marker.on("click", () => select(entity.id, { toggle: false }));
     marker.addTo(state.overlays);
     state.markers.set(entity.id, marker);
   }
@@ -534,7 +541,7 @@ function markerIcon(entity) {
   }
   return L.divIcon({
     className: "mk-host",
-    html: `<span class="${classes.join(" ")}"${style}>${esc(valueText(entity))}${arrow}</span>`,
+    html: `<span class="${classes.join(" ")}" data-entity="${esc(entity.id)}"${style}>${esc(valueText(entity))}${arrow}</span>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
@@ -554,12 +561,21 @@ function tooltip(entity) {
 
 /* Selection and detail -------------------------------------------- */
 
-function select(id, { pan = false } = {}) {
-  state.selected = state.selected === id && !pan ? null : id;
+function select(id, { pan = false, toggle = true } = {}) {
+  const previous = state.selected;
+  state.selected = toggle && state.selected === id && !pan ? null : id;
+  if (previous === state.selected && !pan) return;
   renderDetail();
   if (state.view === "map") {
-    renderMap();
+    const hadFocus = document.activeElement && document.activeElement.classList.contains("mk-host");
+    for (const changed of new Set([previous, id])) {
+      const marker = changed && state.markers.get(changed);
+      const entity = changed && entityById(changed);
+      if (marker && entity) marker.setIcon(markerIcon(entity));
+    }
     const entity = entityById(id);
+    const marker = state.markers.get(id);
+    if (hadFocus && marker && marker.getElement()) marker.getElement().focus();
     if (pan && entity && state.map) state.map.panTo([entity.latitude, entity.longitude], { animate: !matchMedia("(prefers-reduced-motion: reduce)").matches });
   }
   if (state.view === "graph") renderGraph();
