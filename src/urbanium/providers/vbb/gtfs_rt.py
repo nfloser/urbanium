@@ -1,7 +1,7 @@
 """VBB GTFS-Realtime alert-count adapter."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from gzip import BadGzipFile, GzipFile
@@ -51,6 +51,8 @@ class VbbAlertSnapshot:
     result: ProviderResult
     stop_references: tuple[VbbAlertStopReference, ...]
     feed_version: str | None = None  # Unverified GTFS-Realtime header label.
+    # Alert id -> header text (German translation preferred), as published.
+    alert_headers: dict[str, str] = field(default_factory=dict)
 
 
 class VbbGtfsRtConfigurationError(ValueError):
@@ -204,6 +206,7 @@ class VbbGtfsRtProvider:
                 )
             )
             stop_references = _alert_stop_references(message)
+            headers = _alert_headers(message)
             version = (
                 message.header.feed_version if message.header.HasField("feed_version") else None
             )
@@ -232,7 +235,10 @@ class VbbGtfsRtProvider:
                 observations=observations,
             )
         return VbbAlertSnapshot(
-            result=result, stop_references=stop_references, feed_version=version
+            result=result,
+            stop_references=stop_references,
+            feed_version=version,
+            alert_headers=headers,
         )
 
     def _snapshot_time(
@@ -282,6 +288,20 @@ def _alert_stop_references(
         for index, selector in enumerate(entity.alert.informed_entity)
         if selector.HasField("stop_id") and selector.stop_id
     )
+
+
+def _alert_headers(message: gtfs_realtime_pb2.FeedMessage) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    for entity in message.entity:
+        if not entity.HasField("alert") or not entity.alert.HasField("header_text"):
+            continue
+        translations = list(entity.alert.header_text.translation)
+        chosen = next((t for t in translations if t.language.lower().startswith("de")), None)
+        chosen = chosen or (translations[0] if translations else None)
+        text = " ".join(chosen.text.split()) if chosen else ""
+        if text and text.isprintable():
+            headers[entity.id] = text[:300]
+    return headers
 
 
 def _unavailable(code: ProviderErrorCode, message: str) -> ProviderResult:

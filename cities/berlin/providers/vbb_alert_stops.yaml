@@ -1,0 +1,8 @@
+schema_version: "1"
+city_id: berlin
+source_id: vbb_gtfs_rt
+static_source_id: vbb_gtfs_static
+endpoint: https://production.gtfsrt.vbb.de/data
+static_url: https://unternehmen.vbb.de/fileadmin/user_upload/VBB/Dokumente/API-Datensaetze/gtfs-mastscharf/GTFS.zip
+static_max_age_days: 7
+freshness_seconds: 300

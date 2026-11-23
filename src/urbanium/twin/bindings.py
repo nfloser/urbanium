@@ -23,6 +23,11 @@ from urbanium.providers.pegelonline.water_level import (
     PegelonlineWaterLevelProvider,
     load_pegelonline_config,
 )
+from urbanium.providers.vbb.alert_stops import (
+    VbbAlertStopDiscovery,
+    VbbAlertStopProvider,
+    load_vbb_alert_stops_config,
+)
 
 FetchBytes = Callable[[str, float], bytes]
 Clock = Callable[[], datetime]
@@ -40,8 +45,18 @@ class AreaBinding:
     provider_for: Callable[[tuple[DiscoveredEntity, ...]], ObservationProvider]
 
 
-def area_bindings(city_dir: Path, *, fetcher: FetchBytes, clock: Clock) -> tuple[AreaBinding, ...]:
-    """Bindings declared in `cities/<id>/providers/`, in a stable order."""
+def area_bindings(
+    city_dir: Path,
+    *,
+    fetcher: FetchBytes,
+    clock: Clock,
+    cache_dir: Path | None = None,
+) -> tuple[AreaBinding, ...]:
+    """Bindings declared in `cities/<id>/providers/`, in a stable order.
+
+    `cache_dir` keeps large, slowly changing inputs (the static GTFS archive)
+    between builds.
+    """
 
     providers = city_dir / "providers"
     bindings: list[AreaBinding] = []
@@ -73,6 +88,25 @@ def area_bindings(city_dir: Path, *, fetcher: FetchBytes, clock: Clock) -> tuple
                 provider_for=_pegel_provider(pegel, fetcher, clock),
             )
         )
+    alerts_path = providers / "vbb_alert_stops.yaml"
+    if alerts_path.is_file():
+        alerts = load_vbb_alert_stops_config(alerts_path)
+        discovery = VbbAlertStopDiscovery(
+            alerts,
+            fetcher=fetcher,
+            clock=clock,
+            cache_dir=cache_dir / alerts.city_id if cache_dir else None,
+        )
+        bindings.append(
+            AreaBinding(
+                capability_id="realtime_transport",
+                source_id=alerts.source_id,
+                quantity_id="alert_mentions",
+                freshness_minutes=max(1, alerts.freshness_seconds // 60),
+                discovery=discovery,
+                provider_for=_alert_stops(discovery),
+            )
+        )
     return tuple(bindings)
 
 
@@ -91,5 +125,12 @@ def _pegel_provider(
 ) -> ProviderFactory:
     def make(gauges: tuple[DiscoveredEntity, ...]) -> ObservationProvider:
         return PegelonlineWaterLevelProvider(config, gauges, fetcher=fetcher, clock=clock)
+
+    return make
+
+
+def _alert_stops(discovery: VbbAlertStopDiscovery) -> ProviderFactory:
+    def make(stops: tuple[DiscoveredEntity, ...]) -> ObservationProvider:
+        return VbbAlertStopProvider(discovery, stops)
 
     return make

@@ -103,6 +103,10 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
         assert page.locator(".mk-temp [data-entity]").count() == 6
         assert page.locator(".mk-gauge [data-entity]").count() == 19
         assert page.locator(".mk-gauge").count() < 19  # lock pairs are grouped
+        assert page.locator(".mk-transit [data-entity]").count() == 3
+        insights = page.inner_text("#insights")
+        assert "Hochwasser und Störungsmeldungen" in insights
+        assert "Beispielhaltestelle Mühlendamm" in insights
         assert "Temperaturunterschied" in page.inner_text("#insights")
 
         page.locator(".leaflet-marker-icon").first.focus()

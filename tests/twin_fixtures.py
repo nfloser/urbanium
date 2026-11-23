@@ -14,6 +14,46 @@ from urbanium.providers.dwd.air_temperature import DWD_NOW_BASE_URL
 from urbanium.providers.dwd.discovery import DWD_NOW_STATION_LIST_URL
 from urbanium.providers.pegelonline.water_level import PEGELONLINE_BASE_URL
 
+VBB_RT_URL = "https://production.gtfsrt.vbb.de/data"
+VBB_STATIC_PREFIX = "https://unternehmen.vbb.de/"
+# Stop ids and positions are invented; one stop lies near gauge 580001.
+STATIC_STOPS = [
+    ("900100003", "Beispielhaltestelle Spree", 52.512, 13.415),
+    ("900200005", "Beispielhaltestelle Süd", 52.45, 13.30),
+]
+ALERTS = [
+    ("alert-a", "Ersatzverkehr Beispiellinie", ["900100003", "unknown:1"]),
+    ("alert-b", "Aufzug außer Betrieb", ["900200005"]),
+]
+
+
+def vbb_feed(*, at: datetime | None = None) -> bytes:
+    from google.transit import gtfs_realtime_pb2
+
+    message = gtfs_realtime_pb2.FeedMessage()
+    message.header.gtfs_realtime_version = "2.0"
+    message.header.timestamp = int(((at or NOW) - timedelta(minutes=1)).timestamp())
+    for alert_id, text, stops in ALERTS:
+        entity = message.entity.add()
+        entity.id = alert_id
+        for stop in stops:
+            entity.alert.informed_entity.add().stop_id = stop
+        translation = entity.alert.header_text.translation.add()
+        translation.text = text
+        translation.language = "de"
+    return message.SerializeToString()
+
+
+def gtfs_zip() -> bytes:
+    rows = ["stop_id,stop_name,stop_lat,stop_lon"] + [
+        f"{sid},{name},{lat},{lon}" for sid, name, lat, lon in STATIC_STOPS
+    ]
+    buffer = BytesIO()
+    with ZipFile(buffer, "w", ZIP_DEFLATED) as target:
+        target.writestr("stops.txt", "\n".join(rows) + "\n")
+    return buffer.getvalue()
+
+
 NOW = datetime(2026, 11, 23, 9, 0, tzinfo=UTC)
 INVENTORY_HEADER = (
     "Stations_id von_datum bis_datum Stationshoehe geoBreite geoLaenge "
@@ -117,6 +157,10 @@ def upstream(
     def fetch(url: str, timeout: float) -> bytes:
         if any(fragment in url for fragment in broken):
             raise OSError("synthetic outage")
+        if url == VBB_RT_URL:
+            return vbb_feed()
+        if url.startswith(VBB_STATIC_PREFIX):
+            return gtfs_zip()
         if url == DWD_NOW_STATION_LIST_URL:
             return inventory.encode("latin-1")
         if url.startswith(DWD_NOW_BASE_URL):

@@ -156,7 +156,9 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
                             "longname": "WASSERSTAND ROHDATEN",
                             "unit": "cm",
                             "gaugeZero": {"unit": "m. ü. NHN", "value": 30.0 + gauge_index},
-                            "characteristicValues": _characteristic(city.id, level, gauge_index),
+                            "characteristicValues": _characteristic(
+                                city.id, level, gauge_index, name
+                            ),
                         }
                     ],
                 }
@@ -165,10 +167,15 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
             series[uuid] = _measurements(level, change, tidal=tidal)
 
     inventory_bytes = ("\n".join(inventory) + "\n").encode("latin-1")
+    vbb_feed, gtfs_zip = _vbb_examples()
 
     def fetch(url: str, timeout: float) -> bytes:
         if url == DWD_NOW_STATION_LIST_URL:
             return inventory_bytes
+        if url.startswith("https://production.gtfsrt.vbb.de/"):
+            return vbb_feed
+        if url.startswith("https://unternehmen.vbb.de/"):
+            return gtfs_zip
         if url.startswith(DWD_NOW_BASE_URL):
             return archives[url.rsplit("_TU_", 1)[1][:5]]
         if url.startswith(f"{PEGELONLINE_BASE_URL}/stations.json"):
@@ -183,11 +190,20 @@ def synthetic_upstream(registry: CityRegistry):  # type: ignore[no-untyped-def]
     return fetch
 
 
-def _characteristic(city_id: str, level: int, index: int) -> list[dict[str, object]]:
+def _characteristic(
+    city_id: str, level: int, index: int, name: str = ""
+) -> list[dict[str, object]]:
     """Invented long-term values; Hamburg's tidal gauges publish none here."""
 
     if city_id == "hamburg" or index % 4 == 3:
         return []
+    if name == "BERLIN-MÜHLENDAMM OP":
+        # Above its mean high water, next to a stop named in an invented alert.
+        return [
+            {"shortname": "MNW", "unit": "cm", "value": level - 70},
+            {"shortname": "MW", "unit": "cm", "value": level - 40},
+            {"shortname": "MHW", "unit": "cm", "value": level - 5},
+        ]
     # Mainz' Rhine gauge sits above its mean high water to show that case.
     shift = 60 if city_id == "mainz" else 0
     return [
@@ -195,6 +211,42 @@ def _characteristic(city_id: str, level: int, index: int) -> list[dict[str, obje
         {"shortname": "MW", "unit": "cm", "value": level - 10 - shift},
         {"shortname": "MHW", "unit": "cm", "value": level + 30 - shift},
     ]
+
+
+def _vbb_examples() -> tuple[bytes, bytes]:
+    """Invented alerts and stops in the real GTFS-Realtime and GTFS formats."""
+
+    from google.transit import gtfs_realtime_pb2
+
+    stops = [
+        ("ex:1001", "Beispielhaltestelle Mühlendamm", 52.5162, 13.4131),
+        ("ex:1002", "Beispielhaltestelle Charlottenburg", 52.5262, 13.2952),
+        ("ex:1003", "Beispielhaltestelle Köpenick", 52.4448, 13.5754),
+    ]
+    alerts = [
+        ("ex-alert-1", "Beispiel: Ersatzverkehr wegen Bauarbeiten", ["ex:1001"]),
+        ("ex-alert-2", "Beispiel: Aufzug außer Betrieb", ["ex:1002", "ex:9999"]),
+        ("ex-alert-3", "Beispiel: Haltestelle verlegt", ["ex:1003"]),
+    ]
+    message = gtfs_realtime_pb2.FeedMessage()
+    message.header.gtfs_realtime_version = "2.0"
+    message.header.timestamp = int((RECORDED_AT - timedelta(minutes=1)).timestamp())
+    for alert_id, text, stop_ids in alerts:
+        entity = message.entity.add()
+        entity.id = alert_id
+        for stop_id in stop_ids:
+            entity.alert.informed_entity.add().stop_id = stop_id
+        translation = entity.alert.header_text.translation.add()
+        translation.text = text
+        translation.language = "de"
+    buffer = BytesIO()
+    with ZipFile(buffer, "w", ZIP_DEFLATED) as target:
+        target.writestr(
+            "stops.txt",
+            "stop_id,stop_name,stop_lat,stop_lon\n"
+            + "".join(f"{sid},{name},{lat},{lon}\n" for sid, name, lat, lon in stops),
+        )
+    return message.SerializeToString(), buffer.getvalue()
 
 
 def _archive(sid: str, base: float, *, phase: float) -> bytes:

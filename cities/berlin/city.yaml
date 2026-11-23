@@ -65,6 +65,20 @@ sources:
       terms_url: https://www.pegelonline.wsv.de/gast/nutzungsbedingungen
       redistribution: permitted
       notes: Raw, unchecked gauge values; WSV excludes liability for accuracy and timeliness.
+  - id: vbb_gtfs_static
+    provider: Verkehrsverbund Berlin-Brandenburg
+    domain: mobility
+    protocol: gtfs
+    status: verified
+    authority: authoritative
+    capabilities: [realtime_transport]
+    endpoint: https://unternehmen.vbb.de/fileadmin/user_upload/VBB/Dokumente/API-Datensaetze/gtfs-mastscharf/GTFS.zip
+    update_frequency: weekly
+    license:
+      identifier: CC BY 4.0
+      terms_url: https://unternehmen.vbb.de/digitale-services/datensaetze/
+      redistribution: permitted
+      notes: Stop-level GTFS; used only to locate stop ids named in GTFS-Realtime alerts. Each run reports how many alert stop ids the inventory does not contain.
   - id: berlin_open_data
     provider: Land Berlin
     domain: open_data

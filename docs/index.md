@@ -21,6 +21,7 @@ The documentation distinguishes implemented platform features from planned work.
 - [DWD station inventory point reader](providers/dwd-station-locations.md)
 - [DWD station discovery and network](providers/dwd-station-discovery.md)
 - [PEGELONLINE water level](providers/pegelonline-water-level.md)
+- [VBB stops named in alerts](providers/vbb-alert-stops.md)
 - [VBB GTFS-Realtime operational alert adapter](providers/vbb-gtfs-realtime.md)
 - [Source-backed GTFS static stop point lookup](providers/vbb-static-stop-points.md)
 - [Reference deployments](cities/reference-deployments.md)
