@@ -102,6 +102,20 @@ class DwdCdcAirTemperatureProvider:
         return f"{DWD_NOW_BASE_URL}/10minutenwerte_TU_{self.config.station_id}_now.zip"
 
     def read(self) -> ProviderResult:
+        """Return only the latest valid observation."""
+
+        return self._read(latest_only=True)
+
+    def read_series(self) -> ProviderResult:
+        """Return every valid observation in the `now` archive, oldest first.
+
+        Availability and freshness are identical to `read()`; only the number
+        of returned observations differs.
+        """
+
+        return self._read(latest_only=False)
+
+    def _read(self, *, latest_only: bool) -> ProviderResult:
         try:
             archive = self._fetcher(self.url, self._timeout)
         except TimeoutError:
@@ -127,7 +141,9 @@ class DwdCdcAirTemperatureProvider:
                 "DWD archive contains no valid air-temperature observations",
             )
 
-        latest = max(observations, key=lambda item: item.observed_at)
+        observations.sort(key=lambda item: item.observed_at)
+        latest = observations[-1]
+        returned = (latest,) if latest_only else tuple(observations)
         age = received_at.astimezone(UTC) - latest.observed_at.astimezone(UTC)
         freshness = (
             Freshness.FRESH
@@ -138,7 +154,7 @@ class DwdCdcAirTemperatureProvider:
             return ProviderResult(
                 availability=Availability.DEGRADED,
                 freshness=freshness,
-                observations=(latest,),
+                observations=returned,
                 error=ProviderError(
                     code=ProviderErrorCode.INVALID_RESPONSE,
                     message=f"ignored {invalid_rows} invalid DWD row(s)",
@@ -147,7 +163,7 @@ class DwdCdcAirTemperatureProvider:
         return ProviderResult(
             availability=Availability.AVAILABLE,
             freshness=freshness,
-            observations=(latest,),
+            observations=returned,
         )
 
     def _parse_archive(
