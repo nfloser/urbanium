@@ -28,7 +28,7 @@ const SUPPORT = {
   unavailable: "nicht verfügbar",
 };
 const AVAILABILITY = { available: "liefert Daten", degraded: "liefert teilweise", unavailable: "liefert keine Daten" };
-const FRESHNESS = { fresh: "aktuell", stale: "veraltet", no_data: "keine Daten" };
+const FRESHNESS = { fresh: "aktuell", stale: "veraltet", no_data: "keine Daten", last_known: "zuletzt bekannt" };
 const PREDICATE = {
   located_in: "liegt im Suchgebiet",
   on_water_body: "misst am Gewässer",
@@ -288,11 +288,14 @@ function renderLayers() {
     const q = QUANTITY[layer.quantity_id] || { label: layer.quantity_id };
     const source = sourceOf(layer.source_id);
     const withData = state.twin.entities.filter((e) => e.capability_id === layer.capability_id && e.latest).length;
-    const meta = layer.discovery_status === "unavailable"
+    let meta = layer.discovery_status === "unavailable"
       ? "Suche nach Messstellen fehlgeschlagen"
       : layer.entity_count === 0
         ? "Keine Messstellen im Suchgebiet gefunden"
         : `${layer.entity_count} Messstellen gefunden, ${withData} mit Werten`;
+    if (layer.carried_over) {
+      meta += `. ${layer.carried_over} Werte stammen vom Stand ${dateTime(layer.carried_over_from)}, weil die Quelle diesmal nichts geliefert hat`;
+    }
     const problem = layer.availability !== "available";
     return h(
       "li",
@@ -480,7 +483,7 @@ function ensureMap() {
   const legend = document.getElementById("legend");
   legend.replaceChildren(
     h("div", { class: "scale" }, "−10°", h("span", { class: "ramp", style: `background: linear-gradient(90deg, ${[-10, 0, 10, 20, 30].map(tempColor).join(",")})` }), "30°"),
-    h("div", {}, "Gestrichelt: veraltet. Leer: keine Werte."),
+    h("div", {}, "Gestrichelt: veraltet oder zuletzt bekannt. Leer: keine Werte."),
   );
   return state.map;
 }
@@ -609,6 +612,7 @@ function markerIcon(group) {
   const entity = group[0];
   const classes = ["mk", entity.entity_type === "river_gauge" ? "mk-gauge" : "mk-temp"];
   if (group.every((e) => e.freshness === "stale")) classes.push("stale");
+  if (group.every((e) => e.freshness === "last_known")) classes.push("lastknown");
   if (group.every((e) => e.freshness === "no_data")) classes.push("nodata");
   if (group.some((e) => e.id === state.selected)) classes.push("selected");
   let style = "";
@@ -639,6 +643,7 @@ function tooltip(entity) {
     h("strong", {}, entity.label),
     h("span", { class: "v" }, entity.latest ? `${valueText(entity, false)} ${q ? q.unit : entity.latest.unit}` : "Keine Werte"),
     entity.latest ? h("div", { class: "t" }, `${q ? q.label : ""}, gemessen ${dateTime(entity.latest.observed_at)}, ${FRESHNESS[entity.freshness]}`) : h("div", { class: "t" }, "Im Inventar gelistet, aber ohne aktuelle Messung"),
+    entity.carried_over_from ? h("div", { class: "t" }, `Vom Stand ${dateTime(entity.carried_over_from)} übernommen; die Quelle hat diesmal nichts geliefert`) : null,
     h("div", { class: "t" }, (sourceOf(entity.source_id) || {}).provider || entity.source_id),
   );
 }
@@ -678,7 +683,8 @@ function renderDetail() {
   }
   const q = entity.latest ? QUANTITY[entity.latest.quantity_id] : null;
   const source = sourceOf(entity.source_id);
-  host.replaceChildren(
+  // Optional sections return null; replaceChildren would render those as text.
+  host.replaceChildren(...[
     h(
       "div",
       { class: "detail-head" },
@@ -688,6 +694,9 @@ function renderDetail() {
     entity.latest
       ? h("div", {}, h("div", { class: "reading" }, h("span", { class: "big" }, valueText(entity, false)), h("span", { class: "unit" }, q ? q.unit : entity.latest.unit)), h("p", { class: "when" }, `${q ? q.label : ""}, gemessen ${dateTime(entity.latest.observed_at)}`, h("span", { class: `fresh fresh-${entity.freshness}` }, FRESHNESS[entity.freshness])))
       : h("p", { class: "when" }, "Diese Messstelle steht im Inventar der Quelle, hat in diesem Lauf aber keine Werte geliefert.", h("span", { class: "fresh fresh-no_data" }, FRESHNESS.no_data)),
+    entity.carried_over_from
+      ? h("p", { class: "carried" }, `Dieser Wert stammt aus dem Stand vom ${dateTime(entity.carried_over_from)}. Im aktuellen Lauf hat die Quelle nichts geliefert, deshalb fließt er in keine Auswertung ein.`)
+      : null,
     entity.series.length > 1 ? sparkline(entity) : null,
     derivedNotes(entity),
     relationList(entity),
@@ -718,7 +727,7 @@ function renderDetail() {
         h("dd", {}, entity.id),
       ),
     ),
-  );
+  ].filter(Boolean));
 }
 
 function attributeText(key, value) {

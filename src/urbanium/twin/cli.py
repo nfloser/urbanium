@@ -25,6 +25,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     build.add_argument("--cities", type=Path, default=Path("cities"))
     build.add_argument("--out", type=Path, required=True)
     build.add_argument("--only", action="append", default=[], help="limit to these city ids")
+    build.add_argument(
+        "--previous",
+        type=Path,
+        help="directory with earlier <city>.json snapshots used as last known values",
+    )
     source = build.add_mutually_exclusive_group()
     source.add_argument("--record", type=Path, help="fetch live and keep every response here")
     source.add_argument("--replay", type=Path, help="serve responses from a recording")
@@ -65,7 +70,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"skip {city.id}: no area declared", file=sys.stderr)
             continue
         bindings = area_bindings(args.cities / city.id, fetcher=fetcher, clock=clock)
-        twin = build_city_snapshot(city, bindings, clock=clock, data_mode=mode)
+        previous = load_previous(args.previous, city.id) if args.previous else None
+        twin = build_city_snapshot(city, bindings, clock=clock, data_mode=mode, previous=previous)
         snapshots.append(twin)
         (args.out / f"{city.id}.json").write_text(twin.model_dump_json(), encoding="utf-8")
         (args.out / f"{city.id}.ttl").write_text(
@@ -75,13 +81,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{layer.capability_id}={layer.availability}({layer.entity_count})"
             for layer in twin.layers
         )
-        print(f"{city.id}: {len(twin.entities)} entities; {summary}", file=sys.stderr)
+        carried = sum(layer.carried_over for layer in twin.layers)
+        note = f"; {carried} carried over" if carried else ""
+        print(f"{city.id}: {len(twin.entities)} entities; {summary}{note}", file=sys.stderr)
 
     index = build_index(snapshots, generated_at=clock(), data_mode=mode)
     (args.out / "index.json").write_text(index.model_dump_json(indent=2), encoding="utf-8")
     if recorder is not None:
         recorder.write_manifest(index.generated_at)
     return 0
+
+
+def load_previous(directory: Path, city_id: str) -> TwinSnapshot | None:
+    """Earlier snapshot of a city, or None when missing or unreadable."""
+
+    path = directory / f"{city_id}.json"
+    if not path.is_file():
+        return None
+    try:
+        return TwinSnapshot.model_validate_json(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"ignore previous snapshot {path}: {type(exc).__name__}", file=sys.stderr)
+        return None
 
 
 if __name__ == "__main__":

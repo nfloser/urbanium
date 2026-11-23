@@ -40,6 +40,8 @@ from urbanium.core.provider import (
 from urbanium.semantics.rdf import GEO, SOSA, URBANIUM, entity_iri, project_relationships
 from urbanium.twin.bindings import AreaBinding, Clock
 
+# Values from an earlier snapshot are kept at most this long after their measurement.
+CARRY_WINDOW = timedelta(hours=48)
 SNAPSHOT_SCHEMA: Literal["urbanium.twin-snapshot/1"] = "urbanium.twin-snapshot/1"
 INDEX_SCHEMA: Literal["urbanium.twin-index/1"] = "urbanium.twin-index/1"
 
@@ -76,9 +78,11 @@ class TwinEntity(BaseModel):
     longitude: float
     attributes: dict[str, str | int | float | bool]
     evidence: list[EvidenceReference]
-    freshness: Literal["fresh", "stale", "no_data"]
+    freshness: Literal["fresh", "stale", "no_data", "last_known"]
     latest: LatestValue | None = None
     series: list[tuple[datetime, str]] = Field(default_factory=list)
+    # Set when the values come from an earlier snapshot because this run got none.
+    carried_over_from: datetime | None = None
 
 
 class TwinLayer(BaseModel):
@@ -95,6 +99,8 @@ class TwinLayer(BaseModel):
     freshness_minutes: int
     entity_count: int
     error: str | None = None
+    carried_over: int = 0
+    carried_over_from: datetime | None = None
 
 
 class AgentRun(BaseModel):
@@ -153,6 +159,7 @@ def build_city_snapshot(
     clock: Clock,
     data_mode: DataMode,
     agents: Sequence[DeterministicComponent] | None = None,
+    previous: TwinSnapshot | None = None,
 ) -> TwinSnapshot:
     discoveries: list[DiscoveryResult] = []
     reads: list[
@@ -175,12 +182,29 @@ def build_city_snapshot(
     # Sampled after every upstream response so no evidence postdates it.
     completed_at = clock()
 
+    carry = _Carry(city, previous, data_mode, completed_at)
     layers: list[TwinLayer] = []
     entities: list[TwinEntity] = []
     inputs: dict[str, CapabilityInput] = {}
     for binding, discovery, descriptor, result in reads:
-        layers.append(_layer(binding, discovery, result))
-        entities.extend(_entities(binding, discovery, result, completed_at))
+        views = _entities(binding, discovery, result, completed_at)
+        if discovery.status is DiscoveryStatus.UNAVAILABLE:
+            views = carry.layer(binding)
+        else:
+            views = [carry.entity(view) for view in views]
+        carried = [view for view in views if view.carried_over_from is not None]
+        layer = _layer(binding, discovery, result)
+        if carried:
+            layer = layer.model_copy(
+                update={
+                    "carried_over": len(carried),
+                    "carried_over_from": min(
+                        view.carried_over_from for view in carried if view.carried_over_from
+                    ),
+                }
+            )
+        layers.append(layer)
+        entities.extend(views)
         if descriptor is not None and result is not None:
             inputs.setdefault(
                 binding.capability_id,
@@ -197,9 +221,91 @@ def build_city_snapshot(
         city=city,
         layers=layers,
         entities=sorted(entities, key=lambda item: item.id),
-        relations=list(derive_relations(city, discoveries, asserted_at=completed_at)),
+        relations=carry.relations(
+            derive_relations(city, discoveries, asserted_at=completed_at),
+            {view.id for view in entities if view.carried_over_from is not None},
+        ),
         agents=runs,
     )
+
+
+class _Carry:
+    """Fill gaps of this run with recent values from an earlier snapshot.
+
+    Only snapshots of the same city and data mode qualify, values are kept at
+    most CARRY_WINDOW after their measurement, and every carried entity is
+    marked `last_known` with the time of the snapshot it came from.
+    """
+
+    def __init__(
+        self,
+        city: CityDefinition,
+        previous: TwinSnapshot | None,
+        data_mode: DataMode,
+        completed_at: datetime,
+    ) -> None:
+        usable = (
+            previous is not None
+            and previous.city.id == city.id
+            and previous.data_mode == data_mode
+            and previous.generated_at <= completed_at
+        )
+        self._previous = previous if usable else None
+        self._completed_at = completed_at
+        self._by_id = {item.id: item for item in self._previous.entities} if self._previous else {}
+
+    def _recent(self, entity: TwinEntity) -> bool:
+        return entity.latest is not None and (
+            self._completed_at - entity.latest.observed_at <= CARRY_WINDOW
+        )
+
+    def _mark(self, entity: TwinEntity) -> TwinEntity:
+        assert self._previous is not None
+        return entity.model_copy(
+            update={
+                "freshness": "last_known",
+                "carried_over_from": entity.carried_over_from or self._previous.generated_at,
+            }
+        )
+
+    def layer(self, binding: AreaBinding) -> list[TwinEntity]:
+        """Whole layer lost (discovery failed): keep its recent entities."""
+
+        return [
+            self._mark(item)
+            for item in self._by_id.values()
+            if item.capability_id == binding.capability_id
+            and item.source_id == binding.source_id
+            and self._recent(item)
+        ]
+
+    def entity(self, view: TwinEntity) -> TwinEntity:
+        """Entity discovered now but without values: keep its recent values."""
+
+        if view.latest is not None:
+            return view
+        earlier = self._by_id.get(view.id)
+        if earlier is None or not self._recent(earlier):
+            return view
+        return self._mark(
+            view.model_copy(
+                update={
+                    "latest": earlier.latest,
+                    "series": earlier.series,
+                    "carried_over_from": earlier.carried_over_from,
+                }
+            )
+        )
+
+    def relations(
+        self, current: Iterable[DerivedRelation], carried_ids: set[str]
+    ) -> list[DerivedRelation]:
+        merged = {item.assertion.canonical_id: item for item in current}
+        if self._previous is not None:
+            for item in self._previous.relations:
+                if item.assertion.subject.canonical_id in carried_ids:
+                    merged.setdefault(item.assertion.canonical_id, item)
+        return sorted(merged.values(), key=lambda item: item.assertion.canonical_id)
 
 
 def build_index(
