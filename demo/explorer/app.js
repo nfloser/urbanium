@@ -594,7 +594,8 @@ function declutter() {
   const placed = [];
   for (const item of items) {
     const r = item.rect;
-    const hit = placed.some((p) => overlaps(r, p)) || symbols.some((other) => other !== item && overlaps(r, other.sym));
+    // The selected label always stays readable; everything else yields to it.
+    const hit = item.rank > 0 && (placed.some((p) => overlaps(r, p)) || symbols.some((other) => other !== item && overlaps(r, other.sym)));
     if (hit) item.label.classList.add("muted");
     else placed.push(r);
   }
@@ -653,7 +654,10 @@ function select(id, { pan = false, toggle = true } = {}) {
     const hadFocus = document.activeElement && document.activeElement.classList.contains("mk-host");
     for (const changed of new Set([previous, id])) {
       const marker = changed && state.markers.get(changed);
-      if (marker && marker._urbaniumGroup) marker.setIcon(markerIcon(marker._urbaniumGroup));
+      if (marker && marker._urbaniumGroup) {
+        marker.setIcon(markerIcon(marker._urbaniumGroup));
+        marker.setZIndexOffset(marker._urbaniumGroup.some((e) => e.id === state.selected) ? 1000 : 0);
+      }
     }
     declutter();
     const entity = entityById(id);
