@@ -7,6 +7,7 @@ Skipped unless Playwright and a Chromium/Chrome binary are available
 import functools
 import http.server
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -88,6 +89,7 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
         page.keyboard.press("Enter")
         assert page.locator("#detail h2").inner_text()
         assert "Herkunft" in page.inner_text("#detail")
+        assert not re.search(r"\bnull\b", page.inner_text("#detail"))
         assert page.evaluate("document.activeElement.classList.contains('mk-host')")
         assert page.locator(".mk.selected").count() == 1
         overlapping = page.evaluate(

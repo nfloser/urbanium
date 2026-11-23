@@ -154,6 +154,8 @@ a { color: var(--water); }
 .mk .part-unit { font-weight: 500; }
 .mk.stale { color: var(--graphite); }
 .mk.stale .sym { background: #fff; border-style: dashed; border-color: var(--graphite); }
+.mk.lastknown { color: var(--graphite); font-style: italic; }
+.mk.lastknown .sym { border-style: dashed; border-color: var(--graphite); opacity: 0.7; }
 .mk.nodata { color: var(--stale); font-weight: 500; }
 .mk.nodata .sym { background: transparent; border-color: var(--stale); }
 .mk.muted > :not(.sym) { display: none; }
@@ -212,6 +214,8 @@ pre.yaml { background: var(--ink); color: #dfe8ee; padding: var(--s4); border-ra
 .fresh { display: inline-block; font-size: 0.8rem; font-weight: 500; padding: 0 var(--s2); border-radius: 2px; margin-left: var(--s1); }
 .fresh.fresh-fresh { background: #dbe9df; color: #1f5131; }
 .fresh.fresh-stale { background: #ecdfc8; color: var(--warn); }
+.fresh.fresh-last_known { background: #e6e0f0; color: #4a3b6b; }
+.carried { margin-top: var(--s3); font-size: 0.88rem; color: var(--graphite); border-left: 3px dashed var(--graphite); padding-left: var(--s3); }
 .fresh.fresh-no_data { background: #e2e6e9; color: var(--graphite); }
 .detail section { margin-top: var(--s5); }
 .spark { width: 100%; height: 88px; display: block; margin-top: var(--s3); }

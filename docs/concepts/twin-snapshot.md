@@ -21,6 +21,17 @@ Each city with an `area` gets `<id>.json` and `<id>.ttl`; `index.json` summarise
 
 Nothing is filled in: an unavailable discovery yields no entities, a station without values stays in the snapshot with `freshness: no_data`, and an agent without the evidence it needs reports why.
 
+## Last known values
+
+`--previous DIR` passes earlier snapshots (`DIR/<city>.json`) to the build. The published site uses the snapshots it served before. When this run gets nothing for a layer (discovery failed) or for a single entity (no values), the build keeps the earlier values under these rules:
+
+- only from a snapshot of the same city and the same data mode, so example or replayed data never enters a live snapshot;
+- only values measured at most 48 hours ago (`CARRY_WINDOW`), so a long outage still ends up empty;
+- every kept entity has `freshness: last_known` and `carried_over_from` (the snapshot it came from; unchanged when carried again), and its layer counts them in `carried_over`;
+- relations of carried entities come along; agents never compute on carried values, because they describe a run that did not happen.
+
+The explorer shows such values dashed and in italics, and says in the detail panel where they come from.
+
 ## Data modes
 
 | Mode | Meaning |

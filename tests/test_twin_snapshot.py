@@ -1,6 +1,7 @@
 """The twin snapshot composes discovery, reads, relations and agents for a city."""
 
 import json
+from datetime import timedelta
 from pathlib import Path
 
 from rdflib import Graph
@@ -8,7 +9,7 @@ from rdflib import Graph
 from tests.twin_fixtures import NOW, upstream
 from urbanium.registry import CityRegistry
 from urbanium.twin.bindings import area_bindings
-from urbanium.twin.cli import main
+from urbanium.twin.cli import load_previous, main
 from urbanium.twin.fetching import RecordingFetcher, ReplayFetcher
 from urbanium.twin.snapshot import (
     SNAPSHOT_SCHEMA,
@@ -194,3 +195,90 @@ def test_cli_builds_index_city_json_and_turtle_from_a_replay(tmp_path: Path) -> 
     assert berlin["data_mode"] == "synthetic"
     assert berlin["generated_at"] == "2026-11-23T09:00:00Z"
     assert (out / "berlin.ttl").read_text(encoding="utf-8").startswith("@prefix")
+
+
+# --- last known good ------------------------------------------------------
+
+LATER = NOW + timedelta(hours=1)
+
+
+def later_snapshot(city_id: str, fetch, previous):  # type: ignore[no-untyped-def]
+    city = REGISTRY.city(city_id)
+    bindings = area_bindings(ROOT / "cities" / city_id, fetcher=fetch, clock=lambda: LATER)
+    return build_city_snapshot(
+        city, bindings, clock=lambda: LATER, data_mode=DataMode.LIVE, previous=previous
+    )
+
+
+def test_layer_outage_keeps_the_last_known_values_marked_as_such() -> None:
+    before = snapshot("berlin")
+
+    twin = later_snapshot("berlin", upstream(broken={"stations.json"}), before)
+
+    gauges = [e for e in twin.entities if e.entity_type == "river_gauge"]
+    assert len(gauges) == 2
+    assert {e.freshness for e in gauges} == {"last_known"}
+    assert all(e.carried_over_from == before.generated_at for e in gauges)
+    assert gauges[0].latest == next(e for e in before.entities if e.id == gauges[0].id).latest
+    layer = next(item for item in twin.layers if item.capability_id == "river_level")
+    assert layer.availability == "unavailable"
+    assert layer.carried_over == 2
+    assert layer.carried_over_from == before.generated_at
+    # Agents never compute on carried values.
+    trend = next(item for item in twin.agents if item.component_id == "water_level_trend")
+    assert trend.run is None
+    # Relations of carried entities come along with them.
+    assert any(
+        r.assertion.subject.entity_id == "pegelonline_580001"
+        and r.assertion.predicate == "on_water_body"
+        for r in twin.relations
+    )
+
+
+def test_single_station_without_data_takes_its_previous_value() -> None:
+    before = snapshot("berlin")
+
+    twin = later_snapshot("berlin", upstream(broken={"_TU_10003_"}), before)
+
+    station = next(e for e in twin.entities if e.entity_id == "dwd_station_10003")
+    assert station.freshness == "last_known"
+    assert station.latest is not None and station.latest.value == "2.9"
+    fresh = next(e for e in twin.entities if e.entity_id == "dwd_station_10001")
+    assert fresh.carried_over_from is None
+
+
+def test_values_older_than_the_carry_window_are_not_kept() -> None:
+    before = snapshot("berlin")
+    city = REGISTRY.city("berlin")
+    much_later = NOW + timedelta(hours=49)
+    bindings = area_bindings(
+        ROOT / "cities" / "berlin",
+        fetcher=upstream(broken={"stations.json"}),
+        clock=lambda: much_later,
+    )
+
+    twin = build_city_snapshot(
+        city, bindings, clock=lambda: much_later, data_mode=DataMode.LIVE, previous=before
+    )
+
+    assert not [e for e in twin.entities if e.entity_type == "river_gauge"]
+
+
+def test_synthetic_or_replayed_values_never_carry_into_live() -> None:
+    before = snapshot("berlin").model_copy(update={"data_mode": DataMode.SYNTHETIC})
+
+    twin = later_snapshot("berlin", upstream(broken={"stations.json"}), before)
+
+    assert not [e for e in twin.entities if e.entity_type == "river_gauge"]
+
+
+def test_cli_reads_previous_snapshots(tmp_path: Path) -> None:
+    previous = tmp_path / "previous"
+    previous.mkdir()
+    (previous / "berlin.json").write_text(snapshot("berlin").model_dump_json(), encoding="utf-8")
+    (previous / "mainz.json").write_text("not json", encoding="utf-8")
+
+    loaded = load_previous(previous, "berlin")
+    assert loaded is not None and loaded.city.id == "berlin"
+    assert load_previous(previous, "mainz") is None
+    assert load_previous(previous, "koeln") is None
