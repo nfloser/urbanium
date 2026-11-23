@@ -14,7 +14,13 @@ An architecture test enforces that `urbanium.agents` imports no provider, API or
 | Agent | Input | Output | Rule |
 |---|---|---|---|
 | `temperature_spread@1` | `weather@1` | `temperature_spread@1` | Lowest, highest, spread and mean air temperature across stations that report **the same measurement time**. The newest time with at least 3 stations is used. Stations without a value at that time are listed in `not_aligned` and never interpolated. |
-| `water_level_trend@1` | `river_level@1` | `water_level_trend@1` | Per gauge: latest value minus the measured value closest to 6 h earlier (accepted within ±45 min). `rising` ≥ +5 cm, `falling` ≤ −5 cm, otherwise `steady`. Without a reference value the trend is `unknown`. |
+| `water_level_class@1` | `river_level@1` with reference context | `water_level_class@1` | Latest level per gauge against the gauge's own published long-term values: `below_mnw`, `mnw_to_mw`, `mw_to_mhw`, `above_mhw`. Gauges without all of MNW, MW and MHW are `no_reference`; with none at all the run is unavailable (`no_characteristic_values`). |
+| `water_level_trend@1` | `river_level@1` | `water_level_class@1` | `river_level@1` with reference context | `water_level_class@1` | Latest level per gauge against the gauge's own published long-term values: `below_mnw`, `mnw_to_mw`, `mw_to_mhw`, `above_mhw`. Gauges without all of MNW, MW and MHW are `no_reference`; with none at all the run is unavailable (`no_characteristic_values`). |
+| `water_level_trend@1` | Per gauge: latest value minus the measured value closest to 6 h earlier (accepted within ±45 min). `rising` ≥ +5 cm, `falling` ≤ −5 cm, otherwise `steady`. Without a reference value the trend is `unknown`. |
+
+### Reference context
+
+`observation_input(..., reference=entities)` adds the read's discovered entities with their attributes and evidence as `reference_entities`. This is sourced reference state (for example the characteristic values PEGELONLINE publishes per gauge), so agents can relate measurements to it without touching a provider. The class agent records the evidence of the values it used per gauge.
 
 A degraded source makes the derived run degraded with a `source_degraded` problem that carries the source's own reason.
 

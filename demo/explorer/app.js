@@ -52,6 +52,9 @@ const ATTRIBUTE = {
   agency: "Zuständiges Amt",
   river_km: "Flusskilometer",
   gauge_zero_m: "Pegelnullpunkt",
+  mnw_cm: "Mittleres Niedrigwasser (MNW)",
+  mw_cm: "Mittelwasser (MW)",
+  mhw_cm: "Mittleres Hochwasser (MHW)",
 };
 const PROBLEM = {
   insufficient_aligned_stations: "Zu wenige Stationen mit gemeinsamem Messzeitpunkt. Für einen fairen Vergleich braucht es mindestens drei.",
@@ -60,6 +63,14 @@ const PROBLEM = {
   trend_not_determinable: "Für einige Pegel fehlt ein Messwert von vor etwa sechs Stunden.",
   source_degraded: "Die Quelle hat nur teilweise geliefert.",
   mixed_units: "Die Werte kommen in unterschiedlichen Einheiten.",
+  no_characteristic_values: "Für keinen Pegel dieser Stadt sind die langjährigen Kennwerte MNW, MW und MHW veröffentlicht.",
+};
+const LEVEL_CLASS = {
+  above_mhw: "über dem mittleren Hochwasser (MHW)",
+  mw_to_mhw: "zwischen Mittelwasser und mittlerem Hochwasser",
+  mnw_to_mw: "zwischen mittlerem Niedrigwasser und Mittelwasser",
+  below_mnw: "unter dem mittleren Niedrigwasser (MNW)",
+  no_reference: "ohne veröffentlichte Kennwerte",
 };
 const TREND = { rising: "steigt", falling: "fällt", steady: "gleichbleibend", unknown: "kein Vergleichswert" };
 const TREND_ARROW = { rising: "▲", falling: "▼", steady: "▶", unknown: "" };
@@ -166,6 +177,11 @@ function payload(run) {
 
 function trendFor(entityId) {
   const out = payload(agent("water_level_trend"));
+  return out ? out.gauges.find((g) => g.entity === entityId) || null : null;
+}
+
+function levelClassFor(entityId) {
+  const out = payload(agent("water_level_class"));
   return out ? out.gauges.find((g) => g.entity === entityId) || null : null;
 }
 
@@ -436,6 +452,34 @@ function renderInsights() {
       blocks.push(h("article", { class: "insight unanswered" }, h("h3", {}, "Pegel in den letzten sechs Stunden"), h("p", {}, problemText(trendRun))));
     }
   }
+  const classRun = agent("water_level_class");
+  if (classRun) {
+    const out = payload(classRun);
+    const title = "Pegel im Vergleich zu ihren Kennwerten";
+    if (out) {
+      const known = out.gauges.filter((g) => g.class !== "no_reference");
+      const notable = known.filter((g) => g.class === "above_mhw" || g.class === "below_mnw");
+      blocks.push(
+        h(
+          "article",
+          { class: "insight" },
+          h("h3", {}, title),
+          h(
+            "p",
+            {},
+            notable.length
+              ? `${notable.length} von ${known.length} Pegeln mit Kennwerten liegen außerhalb ihres üblichen Bereichs.`
+              : `Alle ${known.length} Pegel mit Kennwerten liegen in ihrem üblichen Bereich zwischen MNW und MHW.`,
+          ),
+          notable.length ? h("ul", {}, notable.map((g) => h("li", {}, entityButton(g.entity), `: ${num(g.latest.value)} cm, ${LEVEL_CLASS[g.class]}`))) : null,
+          out.gauges.length > known.length ? h("p", { class: "hint" }, `${out.gauges.length - known.length} Pegel haben keine veröffentlichten Kennwerte.`) : null,
+          howBlock(classRun, [["Regel", "Letzter Wert gegen die langjährigen Mittelwerte des Pegels selbst: MNW, MW und MHW, wie PEGELONLINE sie veröffentlicht. Fehlen sie, wird nichts geschätzt."]]),
+        ),
+      );
+    } else {
+      blocks.push(h("article", { class: "insight unanswered" }, h("h3", {}, title), h("p", {}, problemText(classRun))));
+    }
+  }
   host.replaceChildren(...blocks);
 }
 
@@ -638,6 +682,7 @@ function markerIcon(group) {
   if (group.every((e) => e.freshness === "stale")) classes.push("stale");
   if (group.every((e) => e.freshness === "last_known")) classes.push("lastknown");
   if (group.every((e) => e.in_surroundings)) classes.push("ring");
+  if (group.some((e) => { const c = levelClassFor(e.id); return c && c.class === "above_mhw"; })) classes.push("high");
   if (group.every((e) => e.freshness === "no_data")) classes.push("nodata");
   if (group.some((e) => e.id === state.selected)) classes.push("selected");
   let style = "";
@@ -760,6 +805,7 @@ function attributeText(key, value) {
   if (key === "elevation_m") return `${num(value)} m`;
   if (key === "gauge_zero_m") return `${num(value, 2)} m über NHN`;
   if (key === "river_km") return `km ${num(value, 1)}`;
+  if (key.endsWith("_cm")) return `${num(value)} cm`;
   if (key === "inventory_until") return new Date(value).toLocaleDateString("de-DE");
   return String(value);
 }
@@ -795,6 +841,10 @@ function emptyDetail() {
 function derivedNotes(entity) {
   const notes = [];
   if (entity.entity_type === "river_gauge") {
+    const level = levelClassFor(entity.id);
+    if (level && level.reference) {
+      notes.push(`Liegt ${LEVEL_CLASS[level.class]}. Kennwerte: MNW ${num(level.reference.mnw_cm)} cm, MW ${num(level.reference.mw_cm)} cm, MHW ${num(level.reference.mhw_cm)} cm.`);
+    }
     const trend = trendFor(entity.id);
     if (trend) {
       notes.push(

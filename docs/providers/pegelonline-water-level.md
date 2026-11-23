@@ -27,6 +27,8 @@ max_gauges: 25
 - have a well-formed `uuid` and numeric `number`,
 - publish a `W` (water level) time series.
 
+With `includeCharacteristicValues=true` the station list also carries long-term characteristic values. MNW, MW and MHW in cm are kept as `mnw_cm`, `mw_cm` and `mhw_cm`, and only when all three are present and numeric (tidal gauges publish other values and get none).
+
 Entities are `river_gauge:pegelonline_<number>` with a `reference` location. Attributes carry uuid, number, water body, operating agency, river kilometre and gauge zero (metres above NHN) when published. Evidence is `stations.json:<uuid>:<sha256 of response>`.
 
 ## Measurements

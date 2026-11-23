@@ -65,6 +65,7 @@ def test_discovery_queries_around_the_area_and_keeps_water_level_gauges_inside_i
     assert float(query["latitude"][0]) == pytest.approx(BERLIN.area.center.latitude)
     assert float(query["radius"][0]) >= BERLIN.area.covering_radius_km
     assert query["includeTimeseries"] == ["true"]
+    assert query["includeCharacteristicValues"] == ["true"]
 
     assert result.status is DiscoveryStatus.AVAILABLE
     assert [item.label for item in result.entities] == ["BERLIN-MÜHLENDAMM UP", "SPANDAU UP"]
@@ -77,6 +78,9 @@ def test_discovery_queries_around_the_area_and_keeps_water_level_gauges_inside_i
         "agency": "SPREE-HAVEL",
         "river_km": 17.6,
         "gauge_zero_m": 30.0,
+        "mnw_cm": 310.0,
+        "mw_cm": 325.0,
+        "mhw_cm": 345.0,
     }
     assert gauge.location.evidence[0].record_id.startswith(f"stations.json:{MUEHLENDAMM}:")
 
@@ -221,3 +225,9 @@ def test_shipped_configs_bind_verified_sources() -> None:
         source = next(item for item in city.sources if item.id == config.source_id)
         assert source.license.redistribution.value == "permitted"
         assert "river_level" in source.capabilities
+
+
+def test_characteristic_values_are_only_taken_when_complete_and_in_cm() -> None:
+    spandau = next(item for item in discovered() if item.label == "SPANDAU UP")
+
+    assert not {"mnw_cm", "mw_cm", "mhw_cm"} & set(spandau.attributes)

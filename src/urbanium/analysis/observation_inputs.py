@@ -1,8 +1,12 @@
 """Checked handoff from canonical provider reads to deterministic component inputs."""
 
+from collections.abc import Iterable
 from datetime import UTC, datetime
 
+from pydantic import JsonValue
+
 from urbanium.core.city import CityDefinition
+from urbanium.core.discovery import DiscoveredEntity
 from urbanium.core.execution import CapabilityInput
 from urbanium.core.provider import (
     ProviderDescriptor,
@@ -18,6 +22,7 @@ def observation_input(
     result: ProviderResult,
     *,
     prepared_at: datetime,
+    reference: Iterable[DiscoveredEntity] | None = None,
 ) -> CapabilityInput:
     """Preserve the complete read outcome under the city's capability contract version.
 
@@ -36,12 +41,44 @@ def observation_input(
         for capability in city.capabilities
         if capability.id == descriptor.capability_id
     )
+    payload: dict[str, JsonValue] = {
+        "prepared_at": prepared_at.astimezone(UTC).isoformat().replace("+00:00", "Z"),
+        "provider": descriptor.model_dump(mode="json"),
+        "read": result.model_dump(mode="json"),
+    }
+    if reference is not None:
+        payload["reference_entities"] = _reference_context(city, reference, prepared_at)
     return CapabilityInput(
         capability_id=descriptor.capability_id,
         version=version,
-        payload={
-            "prepared_at": prepared_at.astimezone(UTC).isoformat().replace("+00:00", "Z"),
-            "provider": descriptor.model_dump(mode="json"),
-            "read": result.model_dump(mode="json"),
-        },
+        payload=payload,
     )
+
+
+def _reference_context(
+    city: CityDefinition, reference: Iterable[DiscoveredEntity], prepared_at: datetime
+) -> list[JsonValue]:
+    """Reference metadata of the read's entities (e.g. gauge characteristic values).
+
+    This is sourced reference state, kept with its evidence, so components can
+    relate measurements to it without calling any provider.
+    """
+
+    context: list[JsonValue] = []
+    for item in reference:
+        entity = item.location.entity
+        if entity.city_id != city.id:
+            raise ValueError("reference entity does not belong to the city")
+        if any(evidence.retrieved_at > prepared_at for evidence in item.location.evidence):
+            raise ValueError("reference evidence must not postdate prepared_at")
+        context.append(
+            {
+                "entity": entity.canonical_id,
+                "entity_type": entity.entity_type,
+                "attributes": dict(item.attributes),
+                "evidence": [
+                    evidence.model_dump(mode="json") for evidence in item.location.evidence
+                ],
+            }
+        )
+    return context

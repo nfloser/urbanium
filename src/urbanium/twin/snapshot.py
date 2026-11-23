@@ -210,7 +210,9 @@ def build_city_snapshot(
         if descriptor is not None and result is not None:
             inputs.setdefault(
                 binding.capability_id,
-                observation_input(city, descriptor, result, prepared_at=completed_at),
+                observation_input(
+                    city, descriptor, result, prepared_at=completed_at, reference=discovery.entities
+                ),
             )
 
     runs = [
