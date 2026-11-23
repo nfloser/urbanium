@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
+from urbanium.core.geometry import CityArea
+
 Identifier = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")]
 VersionIdentifier = Annotated[
     str,
@@ -101,6 +103,7 @@ class CityDefinition(BaseModel):
     name: str = Field(min_length=1)
     country_code: str = Field(pattern=r"^[A-Z]{2}$")
     timezone: str
+    area: CityArea | None = None
     capabilities: tuple[CapabilityDefinition, ...]
     sources: tuple[SourceDefinition, ...]
 

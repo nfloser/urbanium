@@ -1,0 +1,7 @@
+schema_version: "1"
+city_id: berlin
+source_id: dwd_open_data
+freshness_minutes: 90
+# Inventory end dates lag behind; the measurement read decides real activity.
+active_within_days: 550
+max_stations: 30

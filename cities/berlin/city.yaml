@@ -3,6 +3,12 @@ id: berlin
 name: Berlin
 country_code: DE
 timezone: Europe/Berlin
+# Search envelope for source discovery, not an administrative boundary.
+area:
+  south: 52.338
+  west: 13.088
+  north: 52.676
+  east: 13.761
 capabilities:
   - id: weather
     support: configured
