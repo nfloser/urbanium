@@ -57,3 +57,26 @@ def test_core_does_not_depend_on_the_api_framework() -> None:
                     violations.append(f"{path}: from {node.module}")
 
     assert not violations, "API framework imports leaked into core: " + "; ".join(violations)
+
+
+def test_agents_depend_on_capabilities_not_on_providers_or_applications() -> None:
+    agents = ROOT / "src" / "urbanium" / "agents"
+    forbidden_prefixes = ("urbanium.providers", "urbanium.api", "fastapi", "cities")
+    violations: list[str] = []
+
+    for path in agents.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.startswith(forbidden_prefixes):
+                        violations.append(f"{path}: import {alias.name}")
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                if node.module.startswith(forbidden_prefixes):
+                    violations.append(f"{path}: from {node.module}")
+        text = path.read_text(encoding="utf-8").casefold()
+        for city in ("berlin", "mainz", "hamburg", "koeln"):
+            if city in text:
+                violations.append(f"{path}: names city '{city}'")
+
+    assert not violations, "agent boundary violated: " + "; ".join(violations)
