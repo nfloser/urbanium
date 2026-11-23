@@ -229,6 +229,10 @@ pre.yaml { background: var(--ink); color: #dfe8ee; padding: var(--s4); border-ra
 .spark { width: 100%; height: 88px; display: block; margin-top: var(--s3); }
 .spark path.line { fill: none; stroke: var(--ink); stroke-width: 1.6; }
 .spark path.area { fill: rgb(21 38 58 / 0.07); }
+.spark path.band { fill: rgb(31 111 178 / 0.18); }
+.range { display: inline-flex; gap: var(--s1); margin: 0 0 var(--s2); }
+.range button { background: none; border: 1px solid var(--rule); border-radius: 3px; padding: var(--s1) var(--s2); cursor: pointer; font: 500 0.85rem var(--narrow); color: var(--graphite); min-height: 2rem; }
+.range button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .spark text { font: 400 11px var(--sans); fill: var(--graphite); }
 .derived-note { background: var(--derived-wash); border-left: 3px solid var(--derived); padding: var(--s2) var(--s3); font-size: 0.92rem; }
 .facts { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); margin: 0; font-size: 0.9rem; }

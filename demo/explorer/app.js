@@ -81,6 +81,7 @@ const state = {
   cityId: null,
   view: "map",
   selected: null,
+  chartRange: "day",
   hidden: new Set(),
   map: null,
   markers: new Map(),
@@ -768,7 +769,7 @@ function renderDetail() {
     entity.carried_over_from
       ? h("p", { class: "carried" }, `Dieser Wert stammt aus dem Stand vom ${dateTime(entity.carried_over_from)}. Im aktuellen Lauf hat die Quelle nichts geliefert, deshalb fließt er in keine Auswertung ein.`)
       : null,
-    entity.series.length > 1 ? sparkline(entity) : null,
+    historySection(entity),
     derivedNotes(entity),
     relationList(entity),
     h(
@@ -902,6 +903,54 @@ function relationList(entity) {
   }
   if (!items.length) return null;
   return h("section", {}, h("h3", {}, "Beziehungen"), h("ul", { class: "relations" }, items));
+}
+
+function historySection(entity) {
+  const hasDaily = entity.daily && entity.daily.length >= 2;
+  const range = hasDaily ? state.chartRange : "day";
+  const chart = range === "month" ? dailyChart(entity) : entity.series.length > 1 ? sparkline(entity) : null;
+  if (!chart) return null;
+  if (!hasDaily) return chart;
+  const toggle = h(
+    "div",
+    { class: "range", role: "group", "aria-label": "Zeitraum" },
+    [["day", "24 Stunden"], ["month", `${entity.daily.length} Tage`]].map(([key, label]) =>
+      h("button", { type: "button", "aria-pressed": String(range === key), onclick: () => { state.chartRange = key; renderDetail(); } }, label),
+    ),
+  );
+  chart.querySelector("h3").after(toggle);
+  return chart;
+}
+
+function dailyChart(entity) {
+  const days = entity.daily.map((d) => ({ t: new Date(d.day + "T12:00:00").getTime(), min: Number(d.min), max: Number(d.max), mean: Number(d.mean) }));
+  const W = 300, H = 88, P = { l: 2, r: 2, t: 16, b: 16 };
+  const x0 = days[0].t, x1 = days[days.length - 1].t;
+  let y0 = Math.min(...days.map((d) => d.min)), y1 = Math.max(...days.map((d) => d.max));
+  if (y0 === y1) { y0 -= 1; y1 += 1; }
+  const X = (x) => P.l + ((x - x0) / (x1 - x0 || 1)) * (W - P.l - P.r);
+  const Y = (y) => P.t + (1 - (y - y0) / (y1 - y0)) * (H - P.t - P.b);
+  const band = days.map((d, i) => `${i ? "L" : "M"}${X(d.t).toFixed(1)},${Y(d.max).toFixed(1)}`).join("") +
+    [...days].reverse().map((d) => `L${X(d.t).toFixed(1)},${Y(d.min).toFixed(1)}`).join("") + "Z";
+  const mean = days.map((d, i) => `${i ? "L" : "M"}${X(d.t).toFixed(1)},${Y(d.mean).toFixed(1)}`).join("");
+  const unit = entity.latest && QUANTITY[entity.latest.quantity_id] ? QUANTITY[entity.latest.quantity_id].short.trim() : "";
+  const digits = entity.latest && entity.latest.quantity_id === "air_temperature" ? 1 : 0;
+  const date = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+  return h(
+    "section",
+    {},
+    h("h3", {}, "Verlauf"),
+    svg(
+      "svg",
+      { class: "spark", viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img", "aria-label": `Tageswerte vom ${date(entity.daily[0].day)} bis ${date(entity.daily[entity.daily.length - 1].day)}, zwischen ${num(y0, digits)} und ${num(y1, digits)} ${unit}` },
+      svg("path", { class: "band", d: band }),
+      svg("path", { class: "line", d: mean, "vector-effect": "non-scaling-stroke" }),
+      svg("text", { x: 2, y: 11 }, `Tagesspanne und Tagesmittel, ${num(y0, digits)} bis ${num(y1, digits)} ${unit}`),
+      svg("text", { x: 2, y: H - 3 }, date(entity.daily[0].day)),
+      svg("text", { x: W - 2, y: H - 3, "text-anchor": "end" }, date(entity.daily[entity.daily.length - 1].day)),
+    ),
+    h("p", { class: "hint" }, "Aus dem stündlichen Archiv dieser Seite, nicht aus der Quelle."),
+  );
 }
 
 function sparkline(entity) {

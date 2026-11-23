@@ -189,11 +189,11 @@ def _characteristic(city_id: str, level: int, index: int) -> list[dict[str, obje
     if city_id == "hamburg" or index % 4 == 3:
         return []
     # Mainz' Rhine gauge sits above its mean high water to show that case.
-    shift = 40 if city_id == "mainz" else 0
+    shift = 60 if city_id == "mainz" else 0
     return [
         {"shortname": "MNW", "unit": "cm", "value": level - 45 - shift},
         {"shortname": "MW", "unit": "cm", "value": level - 10 - shift},
-        {"shortname": "MHW", "unit": "cm", "value": level + 30 - shift * 2},
+        {"shortname": "MHW", "unit": "cm", "value": level + 30 - shift},
     ]
 
 
@@ -225,10 +225,46 @@ def _measurements(level: int, change: int, *, tidal: bool) -> bytes:
     return json.dumps(rows).encode("utf-8")
 
 
+def _write_archive(root: Path, twin) -> None:  # type: ignore[no-untyped-def]
+    """Invented hourly values for the 29 days before the recording."""
+
+    directory = root / twin.city.id
+    directory.mkdir(parents=True, exist_ok=True)
+    files: dict[str, list[str]] = {}
+    for entity in twin.entities:
+        if entity.latest is None:
+            continue
+        base = float(entity.latest.value)
+        temperature = entity.latest.quantity_id == "air_temperature"
+        for hour in range(24 * 29, 24, -1):
+            moment = RECORDED_AT - timedelta(hours=hour)
+            day = hour / 24
+            if temperature:
+                value = (
+                    base
+                    + 3 * math.sin(day / 5)
+                    + 2.5 * math.sin((moment.hour - 9) / 24 * 2 * math.pi)
+                )
+                text = f"{value:.1f}"
+            else:
+                value = base + 25 * math.sin(day / 7) - day * 0.8
+                text = f"{round(value)}"
+            files.setdefault(moment.strftime("%Y-%m"), []).append(
+                f"{entity.id},{entity.latest.quantity_id},{moment:%Y-%m-%dT%H:%M:%SZ},{text},{entity.latest.unit}"
+            )
+    for month, lines in files.items():
+        (directory / f"{month}.csv").write_text(
+            "entity,quantity,observed_at,value,unit\n" + "\n".join(lines) + "\n", encoding="utf-8"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--cities", type=Path, default=Path("cities"))
+    parser.add_argument(
+        "--archive", type=Path, help="also write 29 days of invented hourly history"
+    )
     args = parser.parse_args()
     registry = CityRegistry.from_directory(args.cities)
     recorder = RecordingFetcher(synthetic_upstream(registry), args.output)
@@ -236,7 +272,11 @@ def main() -> None:
         if city.area is None:
             continue
         bindings = area_bindings(args.cities / city.id, fetcher=recorder, clock=lambda: RECORDED_AT)
-        build_city_snapshot(city, bindings, clock=lambda: RECORDED_AT, data_mode=DataMode.SYNTHETIC)
+        twin = build_city_snapshot(
+            city, bindings, clock=lambda: RECORDED_AT, data_mode=DataMode.SYNTHETIC
+        )
+        if args.archive:
+            _write_archive(args.archive, twin)
     manifest = recorder.write_manifest(RECORDED_AT).model_copy(
         update={"synthetic": True, "note": "Invented example data for offline development."}
     )
