@@ -19,6 +19,16 @@ The GitHub issues are the executable roadmap. Dependencies are intentional; date
 
 - **#8 First evidence-backed cross-domain demonstrator** — depends on #4, #5 and #7. Provider evidence-to-component input conversion (#29), a deterministic weather/transport source-readiness snapshot (#31) and the reusable evidence/answerability pre-flight (#77) establish a bounded integration path. A descriptive nearest-observation timestamp gap (#37) is a diagnostic, not temporal alignment. A defensible real-data impact analysis, temporal/spatial alignment and an operational decision rule remain outstanding; the readiness snapshot does not close #8.
 
+## P2b: any city, derived knowledge, usable demo
+
+- **Area-based discovery** — implemented. Cities declare a search area; DWD and PEGELONLINE discover their entities inside it (ADR 0004).
+- **PEGELONLINE water level** — implemented as a shared nationwide adapter; Berlin's `river_level` is now configured.
+- **Agents** — `temperature_spread@1`, `water_level_trend@1` and spatial relations, all deterministic and evidence-backed.
+- **Twin snapshot and Twin Explorer** — implemented; published on GitHub Pages from live sources on a schedule.
+- **Hamburg and Köln** — added through configuration only.
+
+Next candidates, each as its own vertical slice: persistent observation history (longer trends, last-known-good state), Umweltbundesamt air quality as a third nationwide source, DWD weather warnings, and a first cross-domain agent that combines water level and precipitation with an explicit decision rule.
+
 ## Planned sequence
 
 #1 -> #2 -> #3 -> #4

@@ -138,7 +138,12 @@ def test_runtime_composition_loads_reference_provider_bindings_without_network()
     response = api.get("/api/v1/cities")
 
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()["cities"]] == ["berlin", "mainz"]
+    assert [item["id"] for item in response.json()["cities"]] == [
+        "berlin",
+        "hamburg",
+        "koeln",
+        "mainz",
+    ]
 
 
 def test_versioned_city_capability_and_source_discovery() -> None:
@@ -147,7 +152,12 @@ def test_versioned_city_capability_and_source_discovery() -> None:
     cities = api.get("/api/v1/cities")
     assert cities.status_code == 200
     assert cities.json()["api_version"] == API_VERSION
-    assert [item["id"] for item in cities.json()["cities"]] == ["berlin", "mainz"]
+    assert [item["id"] for item in cities.json()["cities"]] == [
+        "berlin",
+        "hamburg",
+        "koeln",
+        "mainz",
+    ]
 
     capabilities = api.get("/api/v1/cities/mainz/capabilities")
     assert capabilities.status_code == 200

@@ -25,3 +25,11 @@ def test_readme_states_platform_boundary() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8").lower()
     assert "not as a dashboard application" in readme
     assert "berlin and mainz are the first reference deployments" in readme
+
+
+def test_published_demo_is_built_from_live_sources_only() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+
+    assert "urbanium-twin build --out _site/data" in workflow
+    assert "--replay" not in workflow
+    assert "sample_recording" not in workflow

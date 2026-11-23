@@ -8,11 +8,11 @@ import pytest
 from urbanium.core.discovery import DiscoveryStatus, validate_discovery_result
 from urbanium.core.provider import ProviderErrorCode
 from urbanium.providers.dwd.discovery import (
+    DWD_NOW_STATION_LIST_URL,
     DwdAreaConfig,
     DwdStationDiscovery,
     load_dwd_area_config,
 )
-from urbanium.providers.dwd.station_location import DWD_STATION_LIST_URL
 from urbanium.registry import load_city_definition
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,7 +45,7 @@ def discovery(
     config: DwdAreaConfig | None = None,
 ) -> DwdStationDiscovery:
     def fetcher(url: str, timeout: float) -> bytes:
-        assert url == DWD_STATION_LIST_URL
+        assert url == DWD_NOW_STATION_LIST_URL
         if isinstance(payload, Exception):
             raise payload
         return payload
@@ -83,7 +83,7 @@ def test_only_recently_active_stations_inside_the_area_are_discovered() -> None:
     }
     assert first.location.entity.entity_type == "weather_station"
     assert first.location.evidence[0].record_id.startswith(
-        "zehn_min_tu_Beschreibung_Stationen.txt:00433:"
+        "zehn_now_tu_Beschreibung_Stationen.txt:00433:"
     )
 
 
@@ -162,3 +162,13 @@ def test_duplicate_inventory_rows_for_one_station_are_trusted_by_neither() -> No
     result = discovery(payload).discover(BERLIN)
 
     assert [item.location.entity.entity_id for item in result.entities] == ["dwd_station_00403"]
+
+
+def test_station_whose_inventory_ended_more_than_a_week_ago_counts_as_closed() -> None:
+    payload = (
+        HEADER + row("00433", 52.4675, 13.4021) + row("00403", 52.4537, 13.3017, until="20261110")
+    ).encode("latin-1")
+
+    result = discovery(payload).discover(BERLIN)
+
+    assert [item.location.entity.entity_id for item in result.entities] == ["dwd_station_00433"]

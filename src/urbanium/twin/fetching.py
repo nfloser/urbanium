@@ -15,6 +15,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 
 from urbanium.providers.dwd.air_temperature import DWD_NOW_BASE_URL, fetch_archive
+from urbanium.providers.dwd.discovery import DWD_NOW_STATION_LIST_URL
 from urbanium.providers.dwd.station_location import DWD_STATION_LIST_URL, fetch_station_inventory
 from urbanium.providers.pegelonline.water_level import PEGELONLINE_BASE_URL, fetch_json_bytes
 
@@ -25,7 +26,7 @@ MANIFEST = "manifest.json"
 def live_fetch(url: str, timeout: float) -> bytes:
     """Route a URL to the size-limited fetcher of its adapter."""
 
-    if url == DWD_STATION_LIST_URL:
+    if url in (DWD_STATION_LIST_URL, DWD_NOW_STATION_LIST_URL):
         return fetch_station_inventory(url, timeout)
     if url.startswith(f"{DWD_NOW_BASE_URL}/"):
         return fetch_archive(url, timeout)

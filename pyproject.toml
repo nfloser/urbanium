@@ -26,6 +26,7 @@ urbanium-twin = "urbanium.twin.cli:main"
 dev = [
   "httpx>=0.28.1,<1",
   "mypy>=1.11,<2",
+  "playwright>=1.48,<2",
   "pytest>=8,<10",
   "ruff>=0.6,<1",
   "types-PyYAML>=6.0",
@@ -44,6 +45,7 @@ testpaths = ["tests"]
 addopts = "-q"
 markers = [
   "live: optional external-provider smoke tests excluded unless explicitly enabled",
+  "e2e: browser tests that need Playwright and a local Chrome/Chromium",
 ]
 
 [tool.ruff]

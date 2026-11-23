@@ -14,10 +14,9 @@ from urbanium.core.discovery import DiscoveredEntity, DiscoveryResult, Discovery
 from urbanium.core.entity import EntityReference, EvidenceReference, StateCategory
 from urbanium.core.provider import ProviderError, ProviderErrorCode
 from urbanium.core.spatial import EntityPointLocation, distance_km
+from urbanium.providers.dwd.air_temperature import DWD_NOW_BASE_URL
 from urbanium.providers.dwd.station_location import (
-    DWD_STATION_LIST_URL,
     MAX_STATION_LIST_BYTES,
-    STATION_LIST_FILENAME,
     DwdStationMetadataError,
     DwdStationRecord,
     fetch_station_inventory,
@@ -25,6 +24,10 @@ from urbanium.providers.dwd.station_location import (
     parse_inventory_record,
 )
 
+NOW_STATION_LIST_FILENAME = "zehn_now_tu_Beschreibung_Stationen.txt"
+# The `now` inventory lists the stations of the current `now` archives and its
+# end dates are current, unlike the historical inventory.
+DWD_NOW_STATION_LIST_URL = f"{DWD_NOW_BASE_URL}/{NOW_STATION_LIST_FILENAME}"
 FetchBytes = Callable[[str, float], bytes]
 Clock = Callable[[], datetime]
 
@@ -42,9 +45,8 @@ class DwdAreaConfig(BaseModel):
     city_id: Identifier
     source_id: Identifier
     freshness_minutes: int = Field(default=90, ge=10, le=1440)
-    # The inventory's end date trails reality (historical archive, yearly
-    # refresh). Stations ending longer ago than this are treated as closed.
-    active_within_days: int = Field(default=550, ge=1, le=3650)
+    # Stations whose inventory end date is older than this are treated as closed.
+    active_within_days: int = Field(default=7, ge=1, le=3650)
     max_stations: int = Field(default=30, ge=1, le=200)
 
 
@@ -96,7 +98,7 @@ class DwdStationDiscovery:
         area = city.area
 
         try:
-            payload = self._fetcher(DWD_STATION_LIST_URL, self._timeout)
+            payload = self._fetcher(DWD_NOW_STATION_LIST_URL, self._timeout)
         except TimeoutError:
             return self._unavailable(ProviderErrorCode.TIMEOUT, "DWD inventory request timed out")
         except (OSError, ValueError):
@@ -163,7 +165,7 @@ class DwdStationDiscovery:
                     EvidenceReference(
                         city_id=self.city_id,
                         source_id=self.source_id,
-                        record_id=f"{STATION_LIST_FILENAME}:{record.station_id}:{digest}",
+                        record_id=f"{NOW_STATION_LIST_FILENAME}:{record.station_id}:{digest}",
                         retrieved_at=discovered_at,
                     ),
                 ),

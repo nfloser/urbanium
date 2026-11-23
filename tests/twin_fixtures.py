@@ -11,7 +11,7 @@ from io import BytesIO
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from urbanium.providers.dwd.air_temperature import DWD_NOW_BASE_URL
-from urbanium.providers.dwd.station_location import DWD_STATION_LIST_URL
+from urbanium.providers.dwd.discovery import DWD_NOW_STATION_LIST_URL
 from urbanium.providers.pegelonline.water_level import PEGELONLINE_BASE_URL
 
 NOW = datetime(2026, 11, 23, 9, 0, tzinfo=UTC)
@@ -117,7 +117,7 @@ def upstream(
     def fetch(url: str, timeout: float) -> bytes:
         if any(fragment in url for fragment in broken):
             raise OSError("synthetic outage")
-        if url == DWD_STATION_LIST_URL:
+        if url == DWD_NOW_STATION_LIST_URL:
             return inventory.encode("latin-1")
         if url.startswith(DWD_NOW_BASE_URL):
             sid = url.rsplit("_TU_", 1)[1][:5]

@@ -2,6 +2,16 @@
 
 Adding a city should normally be an integration task, not a fork of Urbanium.
 
+## Fast path: nationwide sources with area discovery
+
+If the city is covered by sources that support [area discovery](../concepts/area-discovery.md) (DWD temperature stations, PEGELONLINE gauges), three files are enough. `cities/koeln/` is a complete example:
+
+1. `city.yaml` with an `area` envelope, the capabilities and the shared `dwd_open_data` and `pegelonline` source definitions;
+2. `providers/dwd_air_temperature_area.yaml`;
+3. `providers/pegelonline.yaml`.
+
+`urbanium-twin build` then discovers the city's stations and gauges, reads them, derives relations and runs every agent whose capabilities the city configures. The general steps below still apply for city-specific sources.
+
 ## 1. Create the deployment definition
 
 Add:

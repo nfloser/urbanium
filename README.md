@@ -4,7 +4,7 @@ Urbanium provides shared infrastructure for federated urban digital twins across
 
 Urbanium is designed as platform infrastructure, not as a dashboard application. Dashboards, command-line tools, research notebooks and municipal integrations are clients of its stable contracts; the core runs independently of them.
 
-Berlin and Mainz are the first reference deployments used to prove portability. Neither city is allowed to define the platform core.
+Berlin and Mainz are the first reference deployments used to prove portability. Neither city is allowed to define the platform core. Hamburg and Köln were added through configuration only, using area-based discovery of nationwide sources.
 
 ## Goals
 
@@ -39,6 +39,8 @@ The [v1 machine API](docs/api/v1.md) exposes city/capability/source discovery an
 
 The first [weather/transport source-readiness component](docs/concepts/weather-transport-readiness.md) consumes canonical provider evidence and reports whether the two independent sources are usable for further analysis. It deliberately does not infer weather-related transport disruptions or claim spatial/temporal alignment.
 
+Cities can declare a search area. Nationwide sources then [discover their entities inside it](docs/concepts/area-discovery.md): every DWD 10-minute temperature station and every [PEGELONLINE](docs/providers/pegelonline-water-level.md) gauge on federal waterways. [Agents](docs/concepts/agents.md) derive evidence-backed knowledge from these reads (temperature difference across stations at one shared time, six-hour water-level trends) and link entities in the knowledge graph (gauge to water body, gauge to nearest weather station). The [twin snapshot](docs/concepts/twin-snapshot.md) bundles all of it per city as versioned JSON and an RDF/Turtle projection with GeoSPARQL points and SOSA observations (see [ADR 0004](docs/adr/0004-area-discovery-and-twin-read-model.md)).
+
 A persistent last-known-good state store is not implemented yet. Scheduling, plugin discovery, persistence and higher-level orchestration remain intentionally separate concerns.
 
 ## Try the full runtime on Windows
@@ -61,17 +63,20 @@ For component runs and semantic projections, see the Python examples in
 the [component documentation](docs/concepts/components.md) and
 [semantic projection guide](docs/ontology/rdf-projection.md).
 
-## Browser demo
+## Twin Explorer
 
-[Try Urbanium / Testen](https://nfloser.github.io/urbanium/)
+[Open the Twin Explorer](https://nfloser.github.io/urbanium/)
 
-Explore the Berlin and Mainz city catalog directly in your browser. The demo
-shows the capabilities and source configurations from the published build.
-For live observations, [run the API locally](docs/api/v1.md#run-locally).
+A map-first explorer for Berlin, Hamburg, Köln and Mainz: live station and gauge
+values on the map, agent results with their reasoning, a knowledge-graph view
+with provenance and a city comparison. A scheduled workflow rebuilds the
+snapshots from live sources twice an hour. The previous catalogue view remains
+available under `/catalog/`. See [demo/README.md](demo/README.md) to run it
+locally or offline.
 
 Maintainers can publish the demo by selecting **GitHub Actions** under
 **Settings → Pages → Source** and running the **Browser demo** workflow on
-`main`. Changes pushed to `main` rebuild the demo automatically.
+`main`. Changes pushed to `main` and the half-hourly schedule rebuild it.
 
 ## Development
 

@@ -16,3 +16,6 @@ venv/
 .idea/
 .vscode/
 .DS_Store
+
+# Twin snapshots are build output, never committed data.
+demo/explorer/data/
