@@ -246,3 +246,8 @@ def test_gzip_fetch_limits_decoded_bytes(monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setattr(gtfs_rt, "MAX_FEED_BYTES", len(payload) - 1)
     with pytest.raises(ValueError, match="size limit"):
         gtfs_rt._fetch_bytes("https://example.test/feed", 1)
+
+
+def test_default_limit_admits_the_current_full_feed_size() -> None:
+    # Regression: the live feed exceeded the former 10 MB limit.
+    assert gtfs_rt.MAX_FEED_BYTES >= 50_000_000
