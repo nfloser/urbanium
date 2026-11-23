@@ -84,7 +84,7 @@ class DwdCdcAirTemperatureProvider:
         timeout: float = 10.0,
     ) -> None:
         self.config = config
-        self._fetcher = fetcher or _fetch_bytes
+        self._fetcher = fetcher or fetch_archive
         self._clock = clock or _utc_now
         self._timeout = timeout
 
@@ -241,7 +241,9 @@ def _unavailable(code: ProviderErrorCode, message: str) -> ProviderResult:
     )
 
 
-def _fetch_bytes(url: str, timeout: float) -> bytes:
+def fetch_archive(url: str, timeout: float) -> bytes:
+    """Fetch one bounded DWD `now` archive."""
+
     with urlopen(url, timeout=timeout) as response:  # noqa: S310 - URL is fixed by the adapter
         payload = cast(bytes, response.read(MAX_ARCHIVE_BYTES + 1))
     if len(payload) > MAX_ARCHIVE_BYTES:
