@@ -532,9 +532,13 @@ function renderMap() {
     marker._urbaniumGroup = group;
   }
 
-  if (cityChanged && area) {
+  if (cityChanged) {
     map.invalidateSize();
-    map.fitBounds([[area.south, area.west], [area.north, area.east]], { paddingTopLeft: [90, 24], paddingBottomRight: [70, 24], animate: false });
+    // Frame what was found, not the whole search envelope; fall back to the area.
+    const points = twin.entities.map((e) => [e.latitude, e.longitude]);
+    const bounds = points.length > 1 ? L.latLngBounds(points) : area ? L.latLngBounds([[area.south, area.west], [area.north, area.east]]) : null;
+    if (bounds) map.fitBounds(bounds, { paddingTopLeft: [90, 30], paddingBottomRight: [70, 30], maxZoom: 13, animate: false });
+    else if (points.length === 1) map.setView(points[0], 12, { animate: false });
   }
   setTimeout(() => {
     map.invalidateSize();
