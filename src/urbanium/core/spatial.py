@@ -5,15 +5,9 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from urbanium.core.entity import EntityReference, EvidenceReference, StateCategory
+from urbanium.core.geometry import CityArea, Wgs84Point, distance_km
 
-
-class Wgs84Point(BaseModel):
-    """Latitude/longitude in EPSG:4326 degrees, not an area of coverage."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
-    longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)
+__all__ = ["CityArea", "EntityPointLocation", "Wgs84Point", "distance_km"]
 
 
 class EntityPointLocation(BaseModel):

@@ -3,6 +3,12 @@ id: mainz
 name: Mainz
 country_code: DE
 timezone: Europe/Berlin
+# Search envelope for source discovery, not an administrative boundary.
+area:
+  south: 49.935
+  west: 8.14
+  north: 50.04
+  east: 8.34
 capabilities:
   - id: weather
     support: configured
