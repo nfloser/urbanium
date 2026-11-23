@@ -1203,7 +1203,7 @@ function renderCompare() {
             "td",
             {},
             h("span", { class: "cell-main" + (declared.support === "configured" ? "" : " off") }, SUPPORT[declared.support] || declared.support),
-            layer ? h("span", { class: "cell-sub" }, `${layer.entity_count} Messstellen, ${AVAILABILITY[layer.availability]}`) : declared.support === "configured" ? h("span", { class: "cell-sub" }, "nicht im Twin-Snapshot") : null,
+            layer ? h("span", { class: "cell-sub" }, `${layer.entity_count} ${cap === "realtime_transport" ? "Haltestellen in Meldungen" : "Messstellen"}, ${AVAILABILITY[layer.availability]}`) : declared.support === "configured" ? h("span", { class: "cell-sub" }, "nicht im Twin-Snapshot") : null,
             sources.length || declared.notes
               ? h(
                   "details",
