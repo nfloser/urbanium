@@ -6,6 +6,7 @@ provider APIs and never name a city.
 
 from urbanium.agents.relations import DerivedRelation, derive_relations
 from urbanium.agents.temperature_spread import TemperatureSpreadAgent
+from urbanium.agents.transit_near_high_water import TransitNearHighWaterAgent
 from urbanium.agents.water_level_class import WaterLevelClassAgent
 from urbanium.agents.water_level_trend import WaterLevelTrendAgent
 from urbanium.core.execution import DeterministicComponent
@@ -14,12 +15,18 @@ from urbanium.core.execution import DeterministicComponent
 def default_agents() -> tuple[DeterministicComponent, ...]:
     """Agents shipped with Urbanium, in a stable order."""
 
-    return (TemperatureSpreadAgent(), WaterLevelTrendAgent(), WaterLevelClassAgent())
+    return (
+        TemperatureSpreadAgent(),
+        WaterLevelTrendAgent(),
+        WaterLevelClassAgent(),
+        TransitNearHighWaterAgent(),
+    )
 
 
 __all__ = [
     "DerivedRelation",
     "TemperatureSpreadAgent",
+    "TransitNearHighWaterAgent",
     "WaterLevelClassAgent",
     "WaterLevelTrendAgent",
     "default_agents",

@@ -100,6 +100,7 @@ a { color: var(--water); }
 .swatch { display: inline-block; width: 0.7rem; height: 0.7rem; margin-right: var(--s1); vertical-align: baseline; border-radius: 50%; }
 .swatch.gauge { border-radius: 1px; transform: rotate(45deg) scale(0.85); background: var(--water); }
 .swatch.temp { background: linear-gradient(90deg, #4f8fc0, #e9e4cf, #d77a3e); }
+.swatch.transit { border-radius: 2px; background: #7a3e9d; }
 .swatch.rel { border-radius: 0; height: 0; border-top: 2px dashed var(--derived); width: 0.9rem; }
 
 .insight { border-left: 3px solid var(--derived); padding: var(--s1) 0 var(--s1) var(--s3); margin-bottom: var(--s4); }
@@ -145,6 +146,9 @@ a { color: var(--water); }
 .mk-gauge { left: auto; right: -0.55rem; }
 .mk .sym { flex: none; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--c, var(--stale)); border: 1.5px solid var(--ink); }
 .mk-gauge .sym { border-radius: 1px; transform: rotate(45deg) scale(0.86); background: var(--water); border-color: #0b3a63; }
+.mk-transit .sym { border-radius: 2px; background: #7a3e9d; border-color: #47215e; width: 0.7rem; height: 0.7rem; }
+.mk-transit { font-weight: 500; font-size: 0.85rem; }
+.tip .quote { color: var(--ink); font-style: italic; }
 .mk.selected .sym { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--ink); }
 .mk .arrow { font-size: 0.75rem; }
 .mk .part { display: inline-flex; align-items: baseline; gap: 0.2rem; cursor: pointer; }

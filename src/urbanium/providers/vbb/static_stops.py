@@ -83,6 +83,7 @@ class VbbGtfsStaticStopInventory:
         self._feed_start_date: date | None = None
         self._feed_end_date: date | None = None
         self._points = _parse_stops(stops_txt)
+        self._names = _parse_stop_names(stops_txt)
 
     @classmethod
     def from_gtfs_zip(
@@ -189,6 +190,11 @@ class VbbGtfsStaticStopInventory:
 
         return self._archive_digest
 
+    def name(self, stop_id: str) -> str | None:
+        """Published stop name, if the inventory has one."""
+
+        return self._names.get(stop_id)
+
     def resolve(self, stop_id: str) -> EntityPointLocation | None:
         """Look up an exact ID; absence or missing coordinates remain unknown."""
 
@@ -281,6 +287,18 @@ def _parse_stops(payload: bytes) -> dict[str, Wgs84Point | None]:
         return points
     except (UnicodeDecodeError, csv.Error) as exc:
         raise VbbGtfsStaticStopError("malformed GTFS stops.txt encoding or CSV") from exc
+
+
+def _parse_stop_names(payload: bytes) -> dict[str, str]:
+    """Printable, non-empty stop names; called after _parse_stops validated the file."""
+
+    reader = csv.DictReader(StringIO(payload.decode("utf-8-sig"), newline=""))
+    names: dict[str, str] = {}
+    for row in reader:
+        name = (row.get("stop_name") or "").strip()
+        if name and name.isprintable():
+            names[cast(str, row["stop_id"])] = name[:120]
+    return names
 
 
 def _parse_feed_info(payload: bytes) -> tuple[str | None, date | None, date | None]:

@@ -18,8 +18,14 @@ from urbanium.providers.dwd.air_temperature import DWD_NOW_BASE_URL, fetch_archi
 from urbanium.providers.dwd.discovery import DWD_NOW_STATION_LIST_URL
 from urbanium.providers.dwd.station_location import DWD_STATION_LIST_URL, fetch_station_inventory
 from urbanium.providers.pegelonline.water_level import PEGELONLINE_BASE_URL, fetch_json_bytes
+from urbanium.providers.vbb.alert_stops import fetch_gtfs_zip
+from urbanium.providers.vbb.gtfs_rt import _fetch_bytes as fetch_vbb_feed
 
 FetchBytes = Callable[[str, float], bytes]
+VBB_RT_PREFIX = "https://production.gtfsrt.vbb.de/"
+VBB_STATIC_PREFIX = (
+    "https://unternehmen.vbb.de/fileadmin/user_upload/VBB/Dokumente/API-Datensaetze/"
+)
 MANIFEST = "manifest.json"
 
 
@@ -32,6 +38,10 @@ def live_fetch(url: str, timeout: float) -> bytes:
         return fetch_archive(url, timeout)
     if url.startswith(f"{PEGELONLINE_BASE_URL}/"):
         return fetch_json_bytes(url, timeout)
+    if url.startswith(VBB_RT_PREFIX):
+        return fetch_vbb_feed(url, timeout)
+    if url.startswith(VBB_STATIC_PREFIX):
+        return fetch_gtfs_zip(url, timeout)
     raise ValueError(f"no adapter owns {url}")
 
 

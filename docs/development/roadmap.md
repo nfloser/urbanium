@@ -27,6 +27,8 @@ The GitHub issues are the executable roadmap. Dependencies are intentional; date
 - **Twin snapshot and Twin Explorer** — implemented; published on GitHub Pages from live sources on a schedule.
 - **Hamburg and Köln** — added through configuration only.
 
+Since then: last known values, a weekly live check, a surroundings ring, characteristic-value classification of gauges, an hourly observation archive with 30-day histories, VBB stops named in alerts and the first cross-domain agent (`transit_near_high_water@1`, a step towards #8 with an explicit rule but no causal claim).
+
 Next candidates, each as its own vertical slice: persistent observation history (longer trends, last-known-good state), Umweltbundesamt air quality as a third nationwide source, DWD weather warnings, and a first cross-domain agent that combines water level and precipitation with an explicit decision rule.
 
 ## Planned sequence

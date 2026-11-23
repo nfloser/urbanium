@@ -27,6 +27,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     build.add_argument("--out", type=Path, required=True)
     build.add_argument("--only", action="append", default=[], help="limit to these city ids")
     build.add_argument(
+        "--cache", type=Path, help="keep large, slowly changing inputs (static GTFS) here"
+    )
+    build.add_argument(
         "--history",
         type=Path,
         help="observation archive directory: append this run and attach 30-day summaries",
@@ -75,7 +78,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if city.area is None:
             print(f"skip {city.id}: no area declared", file=sys.stderr)
             continue
-        bindings = area_bindings(args.cities / city.id, fetcher=fetcher, clock=clock)
+        bindings = area_bindings(
+            args.cities / city.id, fetcher=fetcher, clock=clock, cache_dir=args.cache
+        )
         previous = load_previous(args.previous, city.id) if args.previous else None
         twin = build_city_snapshot(city, bindings, clock=clock, data_mode=mode, previous=previous)
         if args.history:

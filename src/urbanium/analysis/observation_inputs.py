@@ -76,6 +76,10 @@ def _reference_context(
                 "entity": entity.canonical_id,
                 "entity_type": entity.entity_type,
                 "attributes": dict(item.attributes),
+                "point": {
+                    "latitude": item.location.point.latitude,
+                    "longitude": item.location.point.longitude,
+                },
                 "evidence": [
                     evidence.model_dump(mode="json") for evidence in item.location.evidence
                 ],

@@ -8,6 +8,12 @@ const DATA = "data/";
 const QUANTITY = {
   air_temperature: { label: "Lufttemperatur", unit: "°C", short: "°" },
   water_level: { label: "Wasserstand", unit: "cm", short: " cm" },
+  alert_mentions: { label: "Nennung in Störungsmeldungen", unit: "", short: "" },
+};
+const LAYER_LABEL = {
+  air_temperature: "Lufttemperatur",
+  water_level: "Wasserstand",
+  alert_mentions: "Haltestellen in Störungsmeldungen",
 };
 const CAPABILITY = {
   weather: "Wetter",
@@ -18,6 +24,7 @@ const CAPABILITY = {
 const ENTITY_KIND = {
   weather_station: "Wetterstation",
   river_gauge: "Pegel",
+  transport_stop: "Haltestelle, in Störungsmeldung genannt",
   water_body: "Gewässer",
   discovery_area: "Suchgebiet",
 };
@@ -52,6 +59,10 @@ const ATTRIBUTE = {
   agency: "Zuständiges Amt",
   river_km: "Flusskilometer",
   gauge_zero_m: "Pegelnullpunkt",
+  stop_id: "Haltestellen-ID",
+  alert_count: "Anzahl Meldungen",
+  alert_ids: "Meldungs-IDs",
+  alert_text: "Meldung",
   mnw_cm: "Mittleres Niedrigwasser (MNW)",
   mw_cm: "Mittelwasser (MW)",
   mhw_cm: "Mittleres Hochwasser (MHW)",
@@ -63,6 +74,7 @@ const PROBLEM = {
   trend_not_determinable: "Für einige Pegel fehlt ein Messwert von vor etwa sechs Stunden.",
   source_degraded: "Die Quelle hat nur teilweise geliefert.",
   mixed_units: "Die Werte kommen in unterschiedlichen Einheiten.",
+  realtime_transport_unavailable: "Der Nahverkehrs-Feed hat in diesem Lauf keine Daten geliefert.",
   no_characteristic_values: "Für keinen Pegel dieser Stadt sind die langjährigen Kennwerte MNW, MW und MHW veröffentlicht.",
 };
 const LEVEL_CLASS = {
@@ -143,6 +155,10 @@ const dateTime = (iso) => timeFormat({ day: "numeric", month: "short", hour: "2-
 
 function valueText(entity, withUnit = true) {
   if (!entity.latest) return "–";
+  if (entity.latest.quantity_id === "alert_mentions") {
+    const n = Number(entity.latest.value);
+    return withUnit ? `${n} ${n === 1 ? "Meldung" : "Meldungen"}` : String(n);
+  }
   const q = QUANTITY[entity.latest.quantity_id];
   const digits = entity.latest.quantity_id === "air_temperature" ? 1 : 0;
   const text = num(entity.latest.value, digits);
@@ -304,14 +320,16 @@ function setView(view, { force = false } = {}) {
 function renderLayers() {
   const list = document.getElementById("layers");
   const items = state.twin.layers.map((layer) => {
-    const q = QUANTITY[layer.quantity_id] || { label: layer.quantity_id };
+    const q = { label: LAYER_LABEL[layer.quantity_id] || layer.quantity_id };
     const source = sourceOf(layer.source_id);
     const withData = state.twin.entities.filter((e) => e.capability_id === layer.capability_id && e.latest).length;
     let meta = layer.discovery_status === "unavailable"
       ? "Suche nach Messstellen fehlgeschlagen"
       : layer.entity_count === 0
         ? "Keine Messstellen im Suchgebiet gefunden"
-        : `${layer.entity_count} Messstellen gefunden, ${withData} mit Werten`;
+        : layer.capability_id === "realtime_transport"
+          ? `${layer.entity_count} Haltestellen im Suchgebiet in aktuellen Meldungen genannt`
+          : `${layer.entity_count} Messstellen gefunden, ${withData} mit Werten`;
     const ring = state.twin.entities.filter((e) => e.capability_id === layer.capability_id && e.in_surroundings).length;
     if (ring) meta += `, davon ${ring} im Umland`;
     if (layer.carried_over) {
@@ -325,9 +343,9 @@ function renderLayers() {
         "label",
         {},
         h("input", { type: "checkbox", checked: !state.hidden.has(layer.capability_id), onchange: (e) => toggleLayer(layer.capability_id, e.target.checked) }),
-        h("span", { class: "layer-name" }, h("span", { class: "swatch " + (layer.capability_id === "river_level" ? "gauge" : "temp") }), q.label),
+        h("span", { class: "layer-name" }, h("span", { class: "swatch " + ({ river_level: "gauge", realtime_transport: "transit" }[layer.capability_id] || "temp") }), q.label),
         h("span", { class: "layer-meta" }, `${source ? source.provider : layer.source_id}`),
-        h("span", { class: "layer-meta" + (problem ? " problem" : "") }, meta + (problem && layer.error ? `. Hinweis der Quelle: ${layer.error}` : "")),
+        h("span", { class: "layer-meta" + (problem ? " problem" : "") }, meta + (problem && layer.error ? `. ${sourceNote(layer.error)}` : "")),
       ),
     );
   });
@@ -345,6 +363,17 @@ function renderLayers() {
     ),
   );
   list.replaceChildren(...items);
+}
+
+/* Known provider diagnostics in plain German; anything else is shown as sent. */
+function sourceNote(message) {
+  const unresolved = /(\d+) of (\d+) alert stop ids are not in the static GTFS inventory/.exec(message);
+  if (unresolved) return `${unresolved[1]} von ${unresolved[2]} in Meldungen genannten Haltestellen-IDs fehlen im Fahrplandatensatz und erscheinen nicht auf der Karte`;
+  const gauges = /(\d+) of (\d+) gauges returned no water levels/.exec(message);
+  if (gauges) return `${gauges[1]} von ${gauges[2]} Pegeln haben diesmal keine Werte geliefert`;
+  const stations = /(\d+) of (\d+) stations returned no air temperature/.exec(message);
+  if (stations) return `${stations[1]} von ${stations[2]} Stationen haben diesmal keine Werte geliefert`;
+  return `Hinweis der Quelle: ${message}`;
 }
 
 function toggleLayer(id, visible) {
@@ -451,6 +480,38 @@ function renderInsights() {
       );
     } else {
       blocks.push(h("article", { class: "insight unanswered" }, h("h3", {}, "Pegel in den letzten sechs Stunden"), h("p", {}, problemText(trendRun))));
+    }
+  }
+  const nearRun = agent("transit_near_high_water");
+  if (nearRun) {
+    const title = "Hochwasser und Störungsmeldungen in der Nähe";
+    const out = payload(nearRun);
+    if (out) {
+      blocks.push(
+        h(
+          "article",
+          { class: "insight" },
+          h("h3", {}, title),
+          h(
+            "p",
+            {},
+            out.pairs.length
+              ? `${out.pairs.length} Haltestelle(n) aus aktuellen Störungsmeldungen liegen höchstens ${num(out.radius_km, 1)} km von einem Pegel über seinem mittleren Hochwasser. Zum Prüfen, nicht als Ursache.`
+              : out.gauges_above_mhw.length
+                ? `${out.gauges_above_mhw.length} Pegel liegen über ihrem mittleren Hochwasser, aber keine in Störungsmeldungen genannte Haltestelle liegt im Umkreis von ${num(out.radius_km, 1)} km.`
+                : `Kein Pegel liegt über seinem mittleren Hochwasser; es gibt nichts abzugleichen.`,
+          ),
+          out.pairs.length
+            ? h("ul", {}, out.pairs.map((x) => h("li", {}, entityButton(x.stop), ` ${num(x.distance_km, 1)} km von `, entityButton(x.gauge), ` (${num(x.level_cm)} cm, MHW ${num(x.mhw_cm)} cm)`)))
+            : null,
+          howBlock(nearRun, [
+            ["Regel", `Pegel mit letztem Wert über MHW und Haltestellen, die eine aktuelle Störungsmeldung nennt, im Umkreis von ${num(out.radius_km, 1)} km (Luftlinie).`],
+            ["Grenze", "Zeigt räumliches Zusammentreffen zur Prüfung. Ob Hochwasser die Meldung verursacht hat, lässt sich daraus nicht ableiten."],
+          ]),
+        ),
+      );
+    } else {
+      blocks.push(h("article", { class: "insight unanswered" }, h("h3", {}, title), h("p", {}, problemText(nearRun))));
     }
   }
   const classRun = agent("water_level_class");
@@ -643,7 +704,7 @@ function declutter() {
     const group = marker._urbaniumGroup || [];
     const selected = group.some((e) => e.id === state.selected);
     const trend = group.map((e) => trendFor(e.id)).find((t) => t && (t.trend === "rising" || t.trend === "falling"));
-    const rank = selected ? 0 : group[0] && group[0].entity_type === "weather_station" ? 1 : trend ? 2 : 3;
+    const rank = selected ? 0 : group[0] && group[0].entity_type === "weather_station" ? 1 : trend || (group[0] && group[0].entity_type === "transport_stop") ? 2 : 3;
     const sym = label.querySelector(".sym");
     items.push({ label, rank, rect: label.getBoundingClientRect(), sym: sym ? sym.getBoundingClientRect() : null });
   }
@@ -679,7 +740,7 @@ function canonical(ref) {
 
 function markerIcon(group) {
   const entity = group[0];
-  const classes = ["mk", entity.entity_type === "river_gauge" ? "mk-gauge" : "mk-temp"];
+  const classes = ["mk", { river_gauge: "mk-gauge", transport_stop: "mk-transit" }[entity.entity_type] || "mk-temp"];
   if (group.every((e) => e.freshness === "stale")) classes.push("stale");
   if (group.every((e) => e.freshness === "last_known")) classes.push("lastknown");
   if (group.every((e) => e.in_surroundings)) classes.push("ring");
@@ -715,6 +776,8 @@ function tooltip(entity) {
     h("span", { class: "v" }, entity.latest ? `${valueText(entity, false)} ${q ? q.unit : entity.latest.unit}` : "Keine Werte"),
     entity.latest ? h("div", { class: "t" }, `${q ? q.label : ""}, gemessen ${dateTime(entity.latest.observed_at)}, ${FRESHNESS[entity.freshness]}`) : h("div", { class: "t" }, "Im Inventar gelistet, aber ohne aktuelle Messung"),
     entity.carried_over_from ? h("div", { class: "t" }, `Vom Stand ${dateTime(entity.carried_over_from)} übernommen; die Quelle hat diesmal nichts geliefert`) : null,
+    entity.attributes.alert_text ? h("div", { class: "t quote" }, `„${entity.attributes.alert_text}“`) : null,
+    entity.entity_type === "transport_stop" ? h("div", { class: "t" }, "Genannt heißt nicht zwingend betroffen.") : null,
     entity.in_surroundings ? h("div", { class: "t" }, `Im Umland, außerhalb des Stadtgebiets`) : null,
     h("div", { class: "t" }, (sourceOf(entity.source_id) || {}).provider || entity.source_id),
   );
@@ -855,6 +918,13 @@ function derivedNotes(entity) {
       );
     }
   }
+  if (entity.entity_type === "transport_stop") {
+    notes.push("Diese Haltestelle wird in einer aktuellen Störungsmeldung genannt. Die Meldung kann sich auch nur auf eine Linie oder Fahrt beziehen; daraus folgt nicht, dass die Haltestelle selbst betroffen ist.");
+    const near = payload(agent("transit_near_high_water"));
+    for (const pair of near ? near.pairs.filter((x) => x.stop === entity.id) : []) {
+      notes.push(`Liegt ${num(pair.distance_km, 1)} km von einem Pegel über seinem mittleren Hochwasser entfernt (${entityById(pair.gauge) ? entityById(pair.gauge).label : pair.gauge}). Räumliches Zusammentreffen, kein Ursachennachweis.`);
+    }
+  }
   if (entity.entity_type === "weather_station") {
     const out = payload(agent("temperature_spread"));
     if (out) {
@@ -908,6 +978,7 @@ function relationList(entity) {
 function historySection(entity) {
   const hasDaily = entity.daily && entity.daily.length >= 2;
   const range = hasDaily ? state.chartRange : "day";
+  if (entity.entity_type === "transport_stop") return null;
   const chart = range === "month" ? dailyChart(entity) : entity.series.length > 1 ? sparkline(entity) : null;
   if (!chart) return null;
   if (!hasDaily) return chart;
