@@ -117,6 +117,9 @@ class TwinLayer(BaseModel):
     error: str | None = None
     carried_over: int = 0
     carried_over_from: datetime | None = None
+    # Latest values of observations about the source as a whole (not about a
+    # discovered entity), e.g. how many alerts the feed carries.
+    summary: dict[str, str] = Field(default_factory=dict)
 
 
 class AgentRun(BaseModel):
@@ -209,7 +212,9 @@ def build_city_snapshot(
         else:
             views = [carry.entity(view) for view in views]
         carried = [view for view in views if view.carried_over_from is not None]
-        layer = _layer(binding, discovery, result)
+        layer = _layer(binding, discovery, result).model_copy(
+            update={"summary": _summary(discovery, result)}
+        )
         if carried:
             layer = layer.model_copy(
                 update={
@@ -437,6 +442,20 @@ def _layer(
         entity_count=len(discovery.entities),
         error=result.error.message if result.error else None,
     )
+
+
+def _summary(discovery: DiscoveryResult, result: ProviderResult | None) -> dict[str, str]:
+    if result is None:
+        return {}
+    discovered = {item.location.entity.canonical_id for item in discovery.entities}
+    latest: dict[str, Observation] = {}
+    for observation in result.observations:
+        if observation.entity.canonical_id in discovered:
+            continue
+        current = latest.get(observation.quantity_id)
+        if current is None or observation.observed_at >= current.observed_at:
+            latest[observation.quantity_id] = observation
+    return {key: str(item.value) for key, item in sorted(latest.items())}
 
 
 def _entities(
