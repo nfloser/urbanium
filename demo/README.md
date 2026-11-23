@@ -10,6 +10,10 @@ A static client for Urbanium twin snapshots (`urbanium.twin-snapshot/1`). It run
 - **Wissensgraph**: stations, gauges, water bodies and the search area with every relationship; blue edges come from the source, ochre dashed edges are derived. The Turtle export of the same graph is one click away.
 - **Städte**: declared capabilities, live coverage and answerable analyses per city, plus the configuration that added Köln and Hamburg without code.
 
+## Review a pull request
+
+The **Browser demo** workflow builds the site from live sources for every pull request and attaches it as the `twin-explorer-preview` artifact (kept 7 days). Download it, run `python -m http.server` inside it and open the printed address.
+
 ## Run locally
 
 ~~~bash

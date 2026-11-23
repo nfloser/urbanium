@@ -30,6 +30,13 @@ jobs:
         run: urbanium-twin build --out _site/data
       - name: Add the Twin Explorer
         run: cp -r demo/explorer/. _site/
+      - name: Keep the built site for pull request review
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: twin-explorer-preview
+          path: _site
+          retention-days: 7
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         if: github.ref == 'refs/heads/main'
         with:
