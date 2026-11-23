@@ -36,10 +36,17 @@ pytestmark = [
 def site(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
     root = tmp_path_factory.mktemp("site")
     recording = tmp_path_factory.mktemp("recording")
+    archive = tmp_path_factory.mktemp("archive")
     shutil.copytree(ROOT / "demo" / "explorer", root, dirs_exist_ok=True)
     env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}
     subprocess.run(
-        [sys.executable, str(ROOT / "demo" / "sample_recording.py"), str(recording)],
+        [
+            sys.executable,
+            str(ROOT / "demo" / "sample_recording.py"),
+            str(recording),
+            "--archive",
+            str(archive),
+        ],
         check=True,
         cwd=ROOT,
         env=env,
@@ -54,6 +61,8 @@ def site(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
             str(recording),
             "--out",
             str(root / "data"),
+            "--history",
+            str(archive),
         ],
         check=True,
         cwd=ROOT,
@@ -103,6 +112,8 @@ def test_map_insights_detail_graph_and_compare_render(site: str) -> None:
         assert not re.search(r"\bnull\b", page.inner_text("#detail"))
         assert page.evaluate("document.activeElement.classList.contains('mk-host')")
         assert page.locator(".mk.selected").count() == 1
+        page.get_by_role("button", name="30 Tage").click()
+        assert "Tagesspanne" in page.inner_text("#detail")
         overlapping = page.evaluate(
             """() => {
               const r = [...document.querySelectorAll('.mk:not(.muted)')]

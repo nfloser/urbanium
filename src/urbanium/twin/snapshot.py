@@ -8,7 +8,7 @@ static clients can render the twin without calling Urbanium or any upstream.
 
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 from hashlib import sha256
 from typing import Literal
@@ -54,6 +54,18 @@ class DataMode(StrEnum):
     SYNTHETIC = "synthetic"  # hand-made example data, never real measurements
 
 
+class DailyStat(BaseModel):
+    """One local calendar day of archived values for one entity."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    day: date
+    min: str
+    max: str
+    mean: str
+    count: int
+
+
 class LatestValue(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -85,6 +97,8 @@ class TwinEntity(BaseModel):
     carried_over_from: datetime | None = None
     # In the optional ring around the city area rather than in the area itself.
     in_surroundings: bool = False
+    # Daily summaries from the observation archive, oldest first (may be empty).
+    daily: list[DailyStat] = Field(default_factory=list)
 
 
 class TwinLayer(BaseModel):

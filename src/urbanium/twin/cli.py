@@ -9,6 +9,7 @@ from pathlib import Path
 from urbanium.registry import CityRegistry
 from urbanium.twin.bindings import area_bindings
 from urbanium.twin.fetching import FetchBytes, RecordingFetcher, ReplayFetcher, live_fetch
+from urbanium.twin.history import append_history, attach_history, daily_stats
 from urbanium.twin.snapshot import (
     DataMode,
     TwinSnapshot,
@@ -25,6 +26,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     build.add_argument("--cities", type=Path, default=Path("cities"))
     build.add_argument("--out", type=Path, required=True)
     build.add_argument("--only", action="append", default=[], help="limit to these city ids")
+    build.add_argument(
+        "--history",
+        type=Path,
+        help="observation archive directory: append this run and attach 30-day summaries",
+    )
     build.add_argument(
         "--previous",
         type=Path,
@@ -72,6 +78,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         bindings = area_bindings(args.cities / city.id, fetcher=fetcher, clock=clock)
         previous = load_previous(args.previous, city.id) if args.previous else None
         twin = build_city_snapshot(city, bindings, clock=clock, data_mode=mode, previous=previous)
+        if args.history:
+            added = append_history(args.history, twin)
+            twin = attach_history(twin, daily_stats(args.history, twin))
+            print(f"{city.id}: archived {added} hourly values", file=sys.stderr)
         snapshots.append(twin)
         (args.out / f"{city.id}.json").write_text(twin.model_dump_json(), encoding="utf-8")
         (args.out / f"{city.id}.ttl").write_text(

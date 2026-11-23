@@ -21,6 +21,14 @@ Each city with an `area` gets `<id>.json` and `<id>.ttl`; `index.json` summarise
 
 Nothing is filled in: an unavailable discovery yields no entities, a station without values stays in the snapshot with `freshness: no_data`, and an agent without the evidence it needs reports why.
 
+## Observation archive
+
+`--history DIR` appends this run's full-hour values to an append-only archive (`DIR/<city>/<YYYY-MM>.csv` with `entity, quantity, observed_at, value, unit`) and attaches `daily` summaries for the last 30 local days to every entity: minimum, maximum, mean and count per day in the city's time zone. Carried-over values are never archived again.
+
+On GitHub the archive lives on the `data` branch. The Pages build job only reads it and hands the updated files to a separate `archive` job, which runs on `main` only and is the only job with write access. Builds on `main` are serialised so archive commits cannot overwrite each other. One value per hour keeps the archive at a few tens of megabytes per year for the four reference cities.
+
+The explorer offers "24 Stunden" and "30 Tage" in the detail panel once two or more days exist, and labels the long view as coming from the site's own archive rather than from the source.
+
 ## Last known values
 
 `--previous DIR` passes earlier snapshots (`DIR/<city>.json`) to the build. The published site uses the snapshots it served before. When this run gets nothing for a layer (discovery failed) or for a single entity (no values), the build keeps the earlier values under these rules:

@@ -42,3 +42,28 @@ def test_explorer_never_injects_upstream_text_as_html() -> None:
 def test_vendored_third_party_code_keeps_its_licences() -> None:
     assert (EXPLORER / "vendor" / "leaflet" / "LICENSE").is_file()
     assert (EXPLORER / "vendor" / "fonts" / "OFL.txt").is_file()
+
+
+def test_explorer_does_not_shadow_browser_globals() -> None:
+    script = (EXPLORER / "app.js").read_text(encoding="utf-8")
+    declared = set(re.findall(r"^(?:function|const|let|var)\s+([A-Za-z_$][\w$]*)", script, re.M))
+    browser_globals = {
+        "history",
+        "location",
+        "name",
+        "status",
+        "open",
+        "close",
+        "print",
+        "event",
+        "top",
+        "parent",
+        "self",
+        "length",
+        "origin",
+        "screen",
+        "navigator",
+        "document",
+    }
+
+    assert not declared & browser_globals
